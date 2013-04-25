@@ -2,7 +2,6 @@ package retry
 
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.Duration
-import scala.util.Try
 import java.util.concurrent.TimeUnit
 
 /** Retry immediately after failure */
@@ -49,17 +48,6 @@ object Backoff extends CountingRetry {
                     base)(promise)
           }.flatMap(identity))
   }
-}
-
-class Success[-T](val predicate: T => Boolean)
-
-object Success {
-  implicit def either[A,B]: Success[Either[A,B]] =
-    new Success(_.isRight)
-  implicit def option[A]: Success[Option[A]] =
-    new Success(!_.isEmpty)
-  implicit def tried[A]: Success[Try[A]] =
-    new Success(_.isSuccess)
 }
 
 trait CountingRetry {
