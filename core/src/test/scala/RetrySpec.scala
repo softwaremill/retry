@@ -33,4 +33,7 @@ class RetrySpec extends FunSpec {
       assert(Await.result(retry.Directly(1)({ () => tries.apply() }), 10.millis) === None)
     }
   }
+
+  describe("retry.Pause") { }
+  describe("retry.Backoff") { }
 }
