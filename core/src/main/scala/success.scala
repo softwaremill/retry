@@ -1,7 +1,9 @@
 package retry
 
+import scala.annotation.implicitNotFound
 import scala.util.Try
 
+@implicitNotFound("Cannot find an implicit retry.Success for the given type of Future, either require one yourself or import retry.Success._")
 class Success[-T](val predicate: T => Boolean)
 
 object Success {
