@@ -14,7 +14,7 @@ Basic usage requires three things
 
 - an implicit execution context for executing futures 
 - a `retry.Timer` for asynchronously scheduling a followup attempt
-- a block of code that results in a `scala.util.Future`
+- a block of code that results in a `scala.concurrent.Future`
 
 Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context and `retry.jdk.JdkTimer` as a `retry.Timer` out of the box.
 
