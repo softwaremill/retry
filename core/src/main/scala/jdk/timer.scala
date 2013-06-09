@@ -27,7 +27,6 @@ class JdkTimer(underlying: ScheduledExecutorService, interruptOnCancel: Boolean)
 
 /** defaults for jdk timers */
 object Default {
-  def timer = new JdkTimer()    
   val poolSize = 2
   val threadFactory: ThreadFactory = new ThreadFactory {
     def newThread(runnable: Runnable) = {
@@ -38,6 +37,7 @@ object Default {
   }
   val rejectionHandler: Option[RejectedExecutionHandler] = None
   val interruptOnCancel = true
+  def timer = new JdkTimer(poolSize, threadFactory, rejectionHandler, interruptOnCancel)
 }
 
 
