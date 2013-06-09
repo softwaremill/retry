@@ -1,3 +1,5 @@
+organization := "me.lessis"
+
 name := "retry-twitter"
 
 libraryDependencies += "com.twitter" % "util-core"  % "6.3.4"
