@@ -1,9 +1,8 @@
 ## initial release
 
-Extracted from [Dispatch Reboot](http://dispatch.databinder.net/Dispatch.html) this library provides generalized abstractions
+Extracted from [Dispatch Reboot](http://dispatch.databinder.net/Dispatch.html), this library provides generalized abstractions
 for retrying failed scala.concurrent.Futures.
 
-Current support is provided for retrying a given number of times ( retry.Directly ), retrying with a pause ( retry.Pause ), and retrying with an exponential
-backoff ( retry.Backoff ).
+Current support is provided for retrying a given number of times ( retry.Directly ), retrying with a pause ( retry.Pause ), and retrying with an exponential backoff ( retry.Backoff ).
 
 To get started see the projects [readme](https://github.com/softprops/retry#readme)
