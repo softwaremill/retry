@@ -10,13 +10,14 @@ Don't let bad things cause other bad things to happen. Give applications a secon
 
 Retry provides interfaces for common retry strategies that operate on `scala.util.Future`s.
 
-Basic usage requires three things 
+Basic usage requires four things 
 
 - an implicit execution context for executing futures 
+- a definition of `retry.Success[-T](pred: T => Boolean)` to encode what "success" means for the type of your future
 - a `retry.Timer` for asynchronously scheduling a followup attempt
 - a block of code that results in a `scala.concurrent.Future`
 
-Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context and `retry.jdk.JdkTimer` as a `retry.Timer` out of the box.
+Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context, `retry.Success` definitions for `Option`, `Either`, and `scala.util.Try`, and a `retry.jdk.JdkTimer` as a `retry.Timer` out of the box.
 
 ```scala
 import scala.concurrent._
