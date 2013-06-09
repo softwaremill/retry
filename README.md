@@ -2,6 +2,12 @@
 
 don't give up
 
+## install
+
+With sbt, add the following to your project's build.sbt
+
+    libraryDependencies += "me.lessis" %% "retry-core" % "0.1.0"
+
 ## usage
 
 Applications can fail a runtime. We know this. Network connections drop. Connections timeout. Bad things happen.
