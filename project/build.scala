@@ -5,8 +5,27 @@ object Common {
   def settings: Seq[Setting[_]] = Seq(
     version := "0.1.0-SNAPSHOT",
     crossScalaVersions := Seq("2.9.3", "2.10.0", "2.10.1"),
-    scalaVersion := "2.9.3"
-  )
+    scalaVersion := "2.9.3",
+    licenses <<= version(v =>
+      Seq("MIT" ->
+          url("https://github.com/softprops/retry/blob/%s/LICENSE" format v))),
+    homepage := Some(url("https://github.com/softprops/retry/")),
+    publishArtifact in Test := false,
+    publishMavenStyle := true,
+    pomExtra := (
+      <scm>
+        <url>git@github.com:softprops/retry.git</url>
+        <connection>scm:git:git@github.com:softprops/retry.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>softprops</id>
+          <name>Doug Tangren</name>
+          <url>http://github.com/softprops</url>
+      </developer>
+      </developers>)) ++ ls.Plugin.lsSettings ++ Seq(
+      ls.Plugin.LsKeys.tags in ls.Plugin.LsKeys.lsync := Seq("github", "gist")
+    )
 }
 
 object Build extends sbt.Build {
