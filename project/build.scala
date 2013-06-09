@@ -10,6 +10,7 @@ object Common {
       Seq("MIT" ->
           url("https://github.com/softprops/retry/blob/%s/LICENSE" format v))),
     homepage := Some(url("https://github.com/softprops/retry/")),
+    publishTo := Some(Opts.resolver.sonatypeStaging),
     publishArtifact in Test := false,
     publishMavenStyle := true,
     pomExtra := (
