@@ -1,0 +1,21 @@
+{
+  "organization" : "retry-twitter",
+  "name" : "retry-twitter",
+  "version" : "0.1.0",
+  "description" : "retry-twitter",
+  "site" : "https://github.com/softprops/retry/",
+  "tags" : [ "github", "gist" ],
+  "docs" : "",
+  "resolvers" : [ "https://oss.sonatype.org/content/repositories/releases" ],
+  "dependencies" : [ {
+    "organization" : "com.twitter",
+    "name" : "util-core",
+    "version" : "6.3.4"
+  } ],
+  "scalas" : [ "2.10.0", "2.10.1" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/retry/blob/0.1.0/LICENSE"
+  } ],
+  "sbt" : false
+}

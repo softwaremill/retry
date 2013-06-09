@@ -1,0 +1,21 @@
+{
+  "organization" : "me.lessis",
+  "name" : "retry-netty",
+  "version" : "0.1.0",
+  "description" : "retry-netty",
+  "site" : "https://github.com/softprops/retry/",
+  "tags" : [ "github", "gist" ],
+  "docs" : "",
+  "resolvers" : [ "https://oss.sonatype.org/content/repositories/releases" ],
+  "dependencies" : [ {
+    "organization" : "org.jboss.netty",
+    "name" : "netty",
+    "version" : "3.2.9.Final"
+  } ],
+  "scalas" : [ "2.9.3", "2.10.0", "2.10.1" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/retry/blob/0.1.0/LICENSE"
+  } ],
+  "sbt" : false
+}
