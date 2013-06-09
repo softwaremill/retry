@@ -26,3 +26,35 @@ retry.Backoff()(Future {
 })
 ```
 
+
+### Defining success.
+
+Retry needs to know what failure or success means in order to know when to retry. It does this through a typed `Success[-T](pred: T => Boolean)` type.
+Where `T` matches the type your `scala.util.Future[T]` is defined with. Retry looks for this implicitly in within the scope of retrying.
+If you are using the `retry.Defaults` you will already have in scope a definition for success for `Either`, `scala.util.Try`, and `Option` types.
+If you wish to define an application-specific definition of what "success" means for your future,
+you may do so by specifying the following in scope of the retry.
+
+```scala
+implicit val success = new Success[Int](_ > 10)
+```
+
+If your future completes with an int less than or equal to 10. It is then considered a failure and will be retried.
+
+### Sleep schedules
+
+Your application may run within a platform that provides its own way for scheduling tasks to happen in the future. If `retry.jdk.JdkTimer` isn't what you're looking for, you may wish to use the `retry.Timer` for netty, `retry.netty.Timer` in the `retry-netty` module or a `retry.twitter.Timer` available in the `retry-twitter` module. If these also aren't what you're looking for, you can define your own in the scope of the retry.
+
+```scala
+class YourTimer extends retry.Timer {
+  def apply[T](len: Long, unit: TimeUnit, todo: => T) = new retry.Timeout {
+    def cancel() {
+      // return something which may be cancelled
+    }
+  }
+}
+
+implicit val timer = new YourTimer 
+```
+
+Doug Tangren (softprops) 2013
