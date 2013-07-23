@@ -5,8 +5,8 @@ object Common {
   def settings: Seq[Setting[_]] = Seq(
     organization := "me.lessis",
     version := "0.1.0",
-    crossScalaVersions := Seq("2.9.3", "2.10.0", "2.10.1"),
-    scalaVersion := "2.9.3",
+    crossScalaVersions := Seq("2.9.3", "2.10.2"),
+    scalaVersion := "2.10.2",
     licenses <<= version(v =>
       Seq("MIT" ->
           url("https://github.com/softprops/retry/blob/%s/LICENSE" format v))),
@@ -50,5 +50,6 @@ object Build extends sbt.Build {
 
   lazy val netty = module("netty").dependsOn(core)
 
-  lazy val twitter = module("twitter").dependsOn(core)
+  lazy val twitter = module("twitter")
+    .dependsOn(core)
 }
