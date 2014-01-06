@@ -6,7 +6,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import java.util.concurrent.TimeUnit
 
 /** Retry immediately after failure */
-object Directly extends CountingRetry {
+object Directly extends Policy {
   def apply[T](
     max: Int = 3)
     (promise: () => Future[T])
@@ -16,7 +16,7 @@ object Directly extends CountingRetry {
 }
 
 /** Retry with a pause between attempts */
-object Pause extends CountingRetry {
+object Pause extends Policy {
   def apply[T](
     max: Int = 4,
     delay: FiniteDuration = Defaults.delay)
@@ -32,7 +32,7 @@ object Pause extends CountingRetry {
 }
 
 /** Retry with exponential backoff */
-object Backoff extends CountingRetry {
+object Backoff extends Policy {
   def apply[T](
     max: Int = 8,
     delay: FiniteDuration = Defaults.delay,
@@ -51,7 +51,7 @@ object Backoff extends CountingRetry {
           }.future.flatMap(identity))
 }
 
-trait CountingRetry {
+trait Policy {
   /** Applies the given function and will retry up to `max` times,
       until a successful result is produced. */
   protected def retry[T](
