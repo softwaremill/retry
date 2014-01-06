@@ -1,12 +1,17 @@
 package retry
 
-import org.scalatest.FunSpec 
+import org.scalatest.{ FunSpec, BeforeAndAfterAll }
+import retry.Defaults.timer
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RetrySpec extends FunSpec {
+class RetrySpec extends FunSpec with BeforeAndAfterAll {
+
+  override def afterAll() {
+    timer.stop()
+  }
 
   def forwardCountingFutureStream(value: Int = 0): Stream[Future[Int]] =
     Future(value) #:: forwardCountingFutureStream(value + 1)
@@ -41,7 +46,6 @@ class RetrySpec extends FunSpec {
 
   describe("retry.Pause") {
     it ("should pause in between retries") {
-      import retry.Defaults.timer
       implicit val success = new Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
       val took = time {
@@ -58,7 +62,6 @@ class RetrySpec extends FunSpec {
 
   describe("retry.Backoff") {
     it ("should pause with multiplier between retries") {
-      import retry.Defaults.timer
       implicit val success = new Success[Int](_ == 2)
       val tries = forwardCountingFutureStream().iterator
       val took = time {
