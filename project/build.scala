@@ -39,7 +39,7 @@ object Build extends sbt.Build {
         publishLocal := { }, // skip publishing locally,
         ls.Plugin.LsKeys.skipWrite := true // don't track root in ls
       )
-    ).aggregate(core, netty, twitter) 
+    ).aggregate(core)
 
   def module(name: String) =
     Project("retry-%s" format name,
