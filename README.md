@@ -22,10 +22,10 @@ Basic usage requires four things
 
 - an implicit execution context for executing futures 
 - a definition of `retry.Success[-T](pred: T => Boolean)` to encode what "success" means for the type of your future
-- a `retry.Timer` for asynchronously scheduling a followup attempt
+- an [odelay.Timer][timer] for asynchronously scheduling a followup attempt
 - a block of code that results in a `scala.concurrent.Future`
 
-Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context, `retry.Success` definitions for `Option`, `Either`, and `scala.util.Try`, and a `retry.jdk.JdkTimer` as a `retry.Timer` out of the box.
+Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context, `retry.Success` definitions for `Option`, `Either`, and `scala.util.Try`, and a `odelay.jdk.JdkTimer` as an `odelay.Timer` out of the box.
 
 ```scala
 import scala.concurrent._
@@ -34,7 +34,6 @@ retry.Backoff()(Future {
   // something that can fail
 })
 ```
-
 
 ### Defining success.
 
@@ -52,18 +51,9 @@ If your future completes with an int less than or equal to 10. It is then consid
 
 ### Sleep schedules
 
-Your application may run within a platform that provides its own way for scheduling tasks to happen in the future. If `retry.jdk.JdkTimer` isn't what you're looking for, you may wish to use the `retry.Timer` for netty, `retry.netty.Timer` in the `retry-netty` module or a `retry.twitter.Timer` available in the `retry-twitter` module. If these also aren't what you're looking for, you can define your own in the scope of the retry.
+Your application may run within a platform that provides its own way for scheduling tasks to happen in the future. If an `odelay.jdk.JdkTimer` isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, `odelay.netty.Timer` in the `odelay-netty` module or an `odelay.twitter.TwitterTimer` available in the `odelay-twitter` module. See the [odelay docs][odelay] for defining your own timer.
 
-```scala
-class YourTimer extends retry.Timer {
-  def apply[T](len: Long, unit: TimeUnit, todo: => T) = new retry.Timeout {
-    def cancel() {
-      // return something which may be cancelled
-    }
-  }
-}
+Doug Tangren (softprops) 2013-2014
 
-implicit val timer = new YourTimer 
-```
-
-Doug Tangren (softprops) 2013
+[timer]: https://github.com/softprops/odelay#timers
+[odelay]: https://github.com/softprops/odelay#readme
