@@ -57,12 +57,14 @@ trait CountingRetry {
                          promise: () => Future[T],
                          success: Success[T],
                          orElse: Int => Future[T]
-                       )(implicit executor: ExecutionContext) = {
+                       )(implicit executor: ExecutionContext): Future[T] = {
     val fut = promise()
     fut.flatMap { res =>
       if (max < 1 || success.predicate(res)) fut
-      else orElse(max - 1)
-    }
+      else orElse(max - 1)    
+    } recoverWith {
+      case e: Throwable => if (max < 1) fut else orElse(max - 1)
+    }    
   }
 }
 

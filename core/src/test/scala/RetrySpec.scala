@@ -2,7 +2,7 @@ package retry
 
 import org.scalatest.FunSpec 
 import scala.annotation.tailrec
-import scala.concurrent.{ Future, Await }
+import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -70,6 +70,24 @@ class RetrySpec extends FunSpec {
              "took less time than expected: %s" format took)
       assert(took <= 110.millis === true,
              "took more time than expected: %s" format took)
+    }
+  }
+
+  describe("retry.CountingRetry") {
+    it ("should retry if an exception was thrown") {
+      import retry.Defaults.timer
+      implicit val success = new Success[Int](_ == 2)
+      def fut = () => future { 1 / 0 }
+      val took = time {      
+        val result = try {
+          Await.result(retry.Pause(3, 30.millis)(fut), 
+                                  90.millis + 20.millis)
+        } catch {
+          case e: Throwable => e
+        }
+      }
+      assert(took >= 90.millis === true,
+             "took less time than expected: %s" format took)
     }
   }
 }
