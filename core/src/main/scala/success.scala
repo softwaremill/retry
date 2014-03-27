@@ -13,6 +13,4 @@ object Success {
     new Success(!_.isEmpty)
   implicit def tried[A]: Success[Try[A]] =
     new Success(_.isSuccess)
-  def definedAt[A,B](pf: PartialFunction[A,B]) =
-    new Success(pf.isDefinedAt)
 }
