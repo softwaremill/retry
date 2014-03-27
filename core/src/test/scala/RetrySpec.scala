@@ -75,4 +75,37 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
              "took more time than expected: %s" format took)
     }
   }
+
+  describe("retry.When") {
+    it ("should retry conditionally when a condition is met") {
+      implicit val success = new Success[Int](_ == 2)
+      val tries = forwardCountingFutureStream().iterator
+      val future = retry.When[Int]({
+        // this is very constrived but should serve as an example
+        // of matching then dispatching a retry depending on
+        // the value of the future when completed
+        case n if n == 0 => retry.When[Int] {
+          case n if n == 1 => retry.Pause(delay = 2.seconds)
+        }
+      }) {
+        tries.next
+      }
+      val result = Await.result(future, 2.seconds)
+      assert(success.predicate(result) === true)
+    }
+
+    it ("should retry but only when condition is met") {
+      implicit val success = new Success[Int](_ == 2)
+      val tries = forwardCountingFutureStream().iterator
+      val future = retry.When[Int]({
+        // this cond will never be met because
+        // a cond for n == 0 is not defined
+        case n if n == 1 => retry.Directly()
+      }) {
+        tries.next
+      }
+      val result = Await.result(future, 1.millis)
+      assert(success.predicate(result) === false)
+    }
+  }
 }
