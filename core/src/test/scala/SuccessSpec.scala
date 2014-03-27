@@ -37,18 +37,4 @@ class SuccessSpec extends FunSpec {
       assert(tried.predicate(Try({ throw new RuntimeException("")})) === false)
     }
   }
-
-  describe("retry.Success.definedAt") {
-    val defined = Success.definedAt[String, Int] {
-      case "pass" => 42
-    }
-
-    it ("should be successful on defined input") {
-      assert(defined.predicate("pass") === true)
-    }
-
-    it ("should be failure on undefined input") {
-      assert(defined.predicate("fail") === false)
-    }
-  }
 }
