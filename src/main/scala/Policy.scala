@@ -21,7 +21,7 @@ object Directly extends CountingPolicy {
     (promise: () => Future[T])
     (implicit success: Success[T],
      executor: ExecutionContext): Future[T] =
-     retryCounting(max, promise, Directly(_)(promise))
+     countdown(max, promise, Directly(_)(promise))
 }
 
 
@@ -46,7 +46,7 @@ object Pause extends CountingPolicy {
     (implicit success: Success[T],
      timer: Timer,
      executor: ExecutionContext): Future[T] =
-     retryCounting(
+     countdown(
        max,
        promise,
        c => Delay(delay) {
@@ -81,7 +81,7 @@ object Backoff extends CountingPolicy {
     (implicit success: Success[T],
      timer: Timer,
      executor: ExecutionContext): Future[T] =
-     retryCounting(
+     countdown(
        max,
        promise,
        count => Delay(delay) {
@@ -118,7 +118,7 @@ object When extends Policy {
 
 /** Retry policy that incorporate a count */
 trait CountingPolicy extends Policy {
-  protected def retryCounting[T](
+  protected def countdown[T](
     max: Int,
     promise: () => Future[T],
     orElse: Int => Future[T])
@@ -126,7 +126,7 @@ trait CountingPolicy extends Policy {
      executor: ExecutionContext): Future[T] = {
       // consider this successful if our predicate says so _or_
       // we've reached the end out our countdown
-      val countedSuccess = new Success[T](success.predicate(_) || max < 1)
+      val countedSuccess = success.or(max < 1)
       retry(promise, () => orElse(max - 1))(countedSuccess, executor)
     }
 }
