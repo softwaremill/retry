@@ -37,4 +37,17 @@ class SuccessSpec extends FunSpec {
       assert(tried.predicate(Try({ throw new RuntimeException("")})) === false)
     }
   }
+
+  describe("retry.Success combinators") {
+    val a = Success[Int](_ > 1)
+    val b = Success[Int](_ < 3)
+    it ("should support and") {
+      assert(a.and(b).predicate(2) === true)
+      assert(a.and(false).predicate(2) === false)
+    }
+    it ("should support or") {
+      assert(a.or(b).predicate(4) === true)
+      assert(a.or(true).predicate(0) === true)
+    }
+  }
 }
