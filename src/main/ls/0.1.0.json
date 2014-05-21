@@ -1,0 +1,17 @@
+{
+  "organization" : "me.lessis",
+  "name" : "retry-core",
+  "version" : "0.1.0",
+  "description" : "a library of simple abstractions for asynchronously retrying failed scala.concurrent.Futures",
+  "site" : "https://github.com/softprops/retry/",
+  "tags" : [ "github", "gist" ],
+  "docs" : "",
+  "resolvers" : [ "https://oss.sonatype.org/content/repositories/releases" ],
+  "dependencies" : [ ],
+  "scalas" : [ "2.9.3", "2.10.0", "2.10.1" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/retry/blob/0.1.0/LICENSE"
+  } ],
+  "sbt" : false
+}
