@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 object Directly {
 
   /** Retry immediately after failure forever */
-  def forever(delay: FiniteDuration = Defaults.delay): Policy =
+  def forever: Policy =
     new Policy {
       def apply[T]
         (promise: () => Future[T])
@@ -34,13 +34,13 @@ object Pause {
   /** Retry with a pause between attempts forever */
   def forever(delay: FiniteDuration = Defaults.delay)
    (implicit timer: Timer): Policy =
-    new Policy {
+    new Policy { self =>
       def apply[T]
         (promise: () => Future[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] =
          retry(promise, { () =>
-           Delay(delay)(Pause.forever(delay)(timer)(promise)).future.flatMap(identity)
+           Delay(delay)(self(promise)).future.flatMap(identity)
          })
     }
 
@@ -60,7 +60,6 @@ object Pause {
            }.future.flatMap(identity))
     }
 }
-
 
 object Backoff {
 
@@ -103,9 +102,8 @@ object Backoff {
  *  {{{
  *  val policy = retry.When {
  *    case FailedRequest(retryAt) => retry.Pausing(delay = retryAt)
- *  } {
- *    issueRequest
  *  }
+ *  val future = policy(issueRequest)
  *  }}}
  *  If the result is not defined for the failure dispatcher the future will not
  *  be retried.
