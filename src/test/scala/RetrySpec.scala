@@ -28,7 +28,7 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
 
   describe("retry.Directly") {
     it ("should retry a future for a specified number of times") {
-      implicit val success = new Success[Int](_ == 3)
+      implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
       val result = Await.result(retry.Directly(3)(tries.next),
                                 1.millis)
@@ -46,10 +46,11 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
 
   describe("retry.Pause") {
     it ("should pause in between retries") {
-      implicit val success = new Success[Int](_ == 3)
+      implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
+      val policy = retry.Pause(3, 30.millis)
       val took = time {
-        val result = Await.result(retry.Pause(3, 30.millis)(tries.next),
+        val result = Await.result(policy(tries.next),
                                   90.seconds + 20.millis)
         assert(success.predicate(result) == true)
       }
@@ -62,10 +63,11 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
 
   describe("retry.Backoff") {
     it ("should pause with multiplier between retries") {
-      implicit val success = new Success[Int](_ == 2)
+      implicit val success = Success[Int](_ == 2)
       val tries = forwardCountingFutureStream().iterator
+      val policy = retry.Backoff(2, 30.millis)
       val took = time {
-        val result = Await.result(retry.Backoff(2, 30.millis)(tries.next),
+        val result = Await.result(policy(tries.next),
                                   90.millis + 20.millis)
         assert(success.predicate(result) === true, "predicate failed")
       }
@@ -78,32 +80,31 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
 
   describe("retry.When") {
     it ("should retry conditionally when a condition is met") {
-      implicit val success = new Success[Int](_ == 2)
+      implicit val success = Success[Int](_ == 2)
       val tries = forwardCountingFutureStream().iterator
-      val future = retry.When[Int]({
+      val policy = retry.When {
         // this is very constrived but should serve as an example
         // of matching then dispatching a retry depending on
         // the value of the future when completed
-        case n if n == 0 => retry.When[Int] {
+        case n if n == 0 => retry.When {
           case n if n == 1 => retry.Pause(delay = 2.seconds)
         }
-      }) {
-        tries.next
       }
+      val future = policy(tries.next)
       val result = Await.result(future, 2.seconds)
       assert(success.predicate(result) === true)
     }
 
     it ("should retry but only when condition is met") {
-      implicit val success = new Success[Int](_ == 2)
+      implicit val success = Success[Int](_ == 2)
       val tries = forwardCountingFutureStream().iterator
-      val future = retry.When[Int]({
+      val policy = retry.When {
         // this cond will never be met because
         // a cond for n == 0 is not defined
         case n if n == 1 => retry.Directly()
-      }) {
-        tries.next
       }
+
+      val future = policy(tries.next)
       val result = Await.result(future, 1.millis)
       assert(success.predicate(result) === false)
     }
