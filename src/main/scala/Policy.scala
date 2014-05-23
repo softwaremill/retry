@@ -23,8 +23,10 @@ object Directly {
       def apply[T]
         (promise: () => Future[T])
         (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         countdown(max, promise, Directly(_)(promise))
+         executor: ExecutionContext): Future[T] = {
+          def run(i: Int): Future[T] = countdown(i, promise, run)
+          run(max)
+        }
     }
 }
 
@@ -51,13 +53,13 @@ object Pause {
       def apply[T]
         (promise: () => Future[T])
         (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         countdown(
-           max,
-           promise,
-           c => Delay(delay) {
-             Pause(c, delay)(timer)(promise)
-           }.future.flatMap(identity))
+         executor: ExecutionContext): Future[T] = {
+          def run(i: Int): Future[T] = countdown(
+            max,
+            promise,
+            c => Delay(delay)(run(c)).future.flatMap(identity))
+          run(max)
+        }
     }
 }
 
@@ -70,12 +72,14 @@ object Backoff {
       def apply[T]
         (promise: () => Future[T])
         (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         retry(promise, { () =>
-           Delay(delay) {
-             Backoff.forever(Duration(delay.length * base, delay.unit), base)(timer)(promise)
-           }.future.flatMap(identity)
-         })
+         executor: ExecutionContext): Future[T] = {
+          def run(delay: FiniteDuration): Future[T] = retry(promise, { () =>
+            Delay(delay) {
+              run(Duration(delay.length * base, delay.unit))
+            }.future.flatMap(identity)
+          })
+          run(delay)
+        }
     }
 
   /** Retry with exponential backoff for a max number of times */
@@ -88,13 +92,15 @@ object Backoff {
       def apply[T]
         (promise: () => Future[T])
         (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         countdown(
-           max,
-           promise,
-           count => Delay(delay) {
-             Backoff(count, Duration(delay.length * base, delay.unit), base)(timer)(promise)
-           }.future.flatMap(identity))
+         executor: ExecutionContext): Future[T] = {
+          def run(i: Int, delay: FiniteDuration): Future[T] = countdown(
+            max,
+            promise,
+            count => Delay(delay) {
+              run(count, Duration(delay.length * base, delay.unit))
+            }.future.flatMap(identity))
+          run(max, delay)
+        }
     }
 }
 
