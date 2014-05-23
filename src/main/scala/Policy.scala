@@ -24,7 +24,7 @@ object Directly {
         (promise: () => Future[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
-          def run(i: Int): Future[T] = countdown(i, promise, run)
+          def run(max: Int): Future[T] = countdown(max, promise, run)
           run(max)
         }
     }
@@ -54,9 +54,8 @@ object Pause {
         (promise: () => Future[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
-          def run(i: Int): Future[T] = countdown(
-            max,
-            promise,
+          def run(max: Int): Future[T] = countdown(
+            max, promise,
             c => Delay(delay)(run(c)).future.flatMap(identity))
           run(max)
         }
@@ -93,9 +92,8 @@ object Backoff {
         (promise: () => Future[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
-          def run(i: Int, delay: FiniteDuration): Future[T] = countdown(
-            max,
-            promise,
+          def run(max: Int, delay: FiniteDuration): Future[T] = countdown(
+            max, promise,
             count => Delay(delay) {
               run(count, Duration(delay.length * base, delay.unit))
             }.future.flatMap(identity))
