@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent.atomic.AtomicInteger
 
 class RetrySpec extends FunSpec with BeforeAndAfterAll {
 
@@ -41,6 +42,18 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
       val result = Await.result(retry.Directly(2)({ () => tries }),
                                 1.millis)
       assert(success.predicate(result) === false)
+    }
+
+    it ("should deal with exceptions") {
+      implicit val success = Success.always
+      val policy = retry.Directly(3)
+      val counter = new AtomicInteger()
+      val future = policy { () =>
+        counter.incrementAndGet()
+        Future.failed(new RuntimeException("always failing"))
+      }
+      Await.ready(future, Duration.Inf)
+      assert(counter.get() === 4)
     }
   }
 
