@@ -3,6 +3,7 @@ package retry
 import odelay.{ Delay, Timer }
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
 import java.util.concurrent.TimeUnit
 
 object Directly {
@@ -139,7 +140,9 @@ trait CountingPolicy extends Policy {
       // consider this successful if our predicate says so _or_
       // we've reached the end out our countdown
       val countedSuccess = success.or(max < 1)
-      retry(promise, () => orElse(max - 1))(countedSuccess, executor)
+      retry(promise, () => orElse(max - 1), { f: Future[T] =>
+        if (max < 1) f else orElse(max - 1)
+      })(countedSuccess, executor)
     }
 }
 
@@ -153,13 +156,16 @@ trait Policy {
 
   protected def retry[T](
     promise: () => Future[T],
-    orElse: () => Future[T])
+    orElse: () => Future[T],
+    recovery: Future[T] => Future[T] = identity(_: Future[T]))
     (implicit success: Success[T],
      executor: ExecutionContext): Future[T] = {
       val fut = promise()
       fut.flatMap { res =>
         if (success.predicate(res)) fut
         else orElse()
+      }.recoverWith {
+        case NonFatal(_) => recovery(fut)
       }
     }
 }
