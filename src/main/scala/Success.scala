@@ -19,5 +19,8 @@ object Success {
   implicit def tried[A]: Success[Try[A]] =
     Success(_.isSuccess)
 
+  val always = Success(Function.const(true))
+  val never  = Success(Function.const(false))
+
   def apply[T](pred: T => Boolean) = new Success(pred)
 }
