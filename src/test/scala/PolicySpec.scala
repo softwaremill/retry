@@ -6,9 +6,9 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
-class RetrySpec extends FunSpec with BeforeAndAfterAll {
+class PolicySpec extends FunSpec with BeforeAndAfterAll {
 
   override def afterAll() {
     timer.stop()
@@ -44,7 +44,7 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
       assert(success.predicate(result) === false)
     }
 
-    it ("should deal with exceptions") {
+    it ("should deal with future failures") {
       implicit val success = Success.always
       val policy = retry.Directly(3)
       val counter = new AtomicInteger()
@@ -120,6 +120,22 @@ class RetrySpec extends FunSpec with BeforeAndAfterAll {
       val future = policy(tries.next)
       val result = Await.result(future, 1.millis)
       assert(success.predicate(result) === false)
+    }
+
+    it ("should handle future failures") {
+      implicit val success = Success[Boolean](identity)
+      case class RetryAfter(duration: FiniteDuration) extends RuntimeException
+      val retried = new AtomicBoolean
+      def run() = if (retried.get()) Future(true) else {
+        retried.set(true)
+        Future.failed(RetryAfter(1.second))
+      }      
+      val policy = retry.When {
+        // lift an exception into a new policy
+        case RetryAfter(duration) => Pause(delay = duration)
+      }
+      val result = Await.result(policy(run), Duration.Inf)
+      assert(result === true)
     }
   }
 }

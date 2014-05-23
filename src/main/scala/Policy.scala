@@ -104,13 +104,17 @@ object Backoff {
 }
 
 /** A retry policy in which the a failure determines the way a future should be retried.
+ *  The partial function provided may define the domain of both the success or exceptional
+ *  failure of a future fails explicitly.
+ *
  *  {{{
  *  val policy = retry.When {
- *    case FailedRequest(retryAt) => retry.Pausing(delay = retryAt)
+ *    case RetryAfter(retryAt) => retry.Pause(delay = retryAt)
  *  }
  *  val future = policy(issueRequest)
  *  }}}
- *  If the result is not defined for the failure dispatcher the future will not
+ *
+ *  If the result is not defined for the depends block, the future will not
  *  be retried.
  */
 object When {
@@ -124,12 +128,15 @@ object When {
          fut.flatMap { res =>
            if (success.predicate(res) || !depends.isDefinedAt(res)) fut
            else depends(res)(promise)
+         }.recoverWith {
+           case NonFatal(e) =>
+             if (depends.isDefinedAt(e)) depends(e)(promise) else fut
          }
       }
     }
 }
 
-/** Retry policy that incorporate a count */
+/** Retry policy that incorporates a count */
 trait CountingPolicy extends Policy {
   protected def countdown[T](
     max: Int,
