@@ -104,7 +104,7 @@ object Backoff {
 }
 
 /** A retry policy in which the a failure determines the way a future should be retried.
- *  The partial function provided may define the domain of both the success or exceptional
+ *  The partial function provided may define the domain of both the success OR exceptional
  *  failure of a future fails explicitly.
  *
  *  {{{
