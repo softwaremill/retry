@@ -1,0 +1,59 @@
+## changes
+
+### retry.Policy
+
+Retries are now defined in terms of a common and easier to work with interface, a `retry.Policy`, which is essentially
+
+    Future[T] => Future[T]
+    
+with a few implicit parameters. One for an instance of `retry.Success[T]` and one for an ExecutionContext. This makes retries easier to pass around as a general interface.
+
+    trait Policy {
+      def apply[T](promise: () => Future[T])
+       (implicit success: Success[T],
+        executor: ExecutionContext): Future[T]    
+    }
+
+Policies are defined for the same three categories of attempts as before: `retry.Directly`, `retry.Pause`, and `retry.Backoff`.
+
+### retry forever
+
+It was previously only possible to retry for a finite number of times. Sometimes you want to try, try, and try again until your future's value meets your definition of `retry.Success`. Each of the 3 retry modules expose a `forever` member whose semantics are tied to the type of retry you request.
+
+    retry.Pause.forever(1.second)(Future {
+      workingOnIt...
+    })
+   
+
+### Odelayed retries
+
+The platform hooks for scheduling future retries at a later time was refactored out into its own library, [odelay](https://github.com/softprops/odelay#readme). Hence, this version strips out the need for multiple modules. Retry as a library is only repsonsible for providing retry logic, relying on odelay for future retry scheduling. Retries which previously required an `retry.Timer` in implicit scope now require an implicit `odelay.Timer`.
+
+### Successful composition
+
+`retry.Success` is a type class for encoding the semantics for what a "success" means for your future. A `retry.Success` is still a `retry.Success`. It's also more composable. A preference is also taken for the factory method for constructing new success instances. For illustration, see the example below
+
+     val a = Success[Int](_ > 1)
+     val b = Success[Int](_ < 3)
+     
+     // a future's value will inferred as a success if its value is greater than one or less than three
+     val either = a.or(v)
+     
+     // a future's value with be inferred as a success if its value is both greater than one and less than three
+     val both = a.and(b)
+     
+If you are feeling adventurous you consider `retry.Success.always` or `retry.Success.never` which will either infer success from any resulting value
+or no resulting value respectively.
+
+
+
+### re-determine how to retry When the right stars are in alignment
+
+Sometimes things don't go according to plan. Sometimes you are working with "exceptional" code that expresses failure with fantastic runtime exceptions.
+Sometimes you are working with a rate-limited service that will respond with a suggested time to come back knocking at a later time.
+For these cases retry exposes an adaptive interface called `retry.When` which return takes a PartialFunction of Any to Policy.
+
+    val policy = retry.When {
+      case RetryAt(time) => retry.Pause(delay = time.seconds)
+    }
+    policy(issueRateLimitedRequest)

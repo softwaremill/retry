@@ -4,7 +4,7 @@ import org.scalatest.FunSpec
 import scala.util.{ Try, Success => TrySuccess }
 
 class SuccessSpec extends FunSpec {
-  import retry.Success._
+//  import retry.Success._
   describe("retry.Success.either") {
     val either = implicitly[Success[Either[String, String]]]
     it ("should be successful on a Right") {

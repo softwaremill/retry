@@ -4,17 +4,21 @@ name := "retry"
 
 version := "0.2.0-SNAPSHOT"
 
-crossScalaVersions := Seq("2.9.3", "2.10.3")
+description := "a library of simple primitives for asynchronously retrying Scala Futures"
 
-scalaVersion := crossScalaVersions.value.head
+crossScalaVersions := Seq("2.10.4", "2.11.1")
 
-licenses <<= version(v =>
+libraryDependencies ++= Seq(
+  "me.lessis" %% "odelay-core" % "0.1.0",
+  "org.scalatest" %% "scalatest" % "2.2.0" % "test")
+
+scalaVersion := crossScalaVersions.value.last
+
+licenses :=
   Seq("MIT" ->
-      url("https://github.com/softprops/retry/blob/%s/LICENSE" format v)))
+      url(s"https://github.com/softprops/retry/blob/${version.value}/LICENSE"))
 
 homepage := Some(url("https://github.com/softprops/retry/"))
-
-publishTo := Some(Opts.resolver.sonatypeStaging)
 
 publishArtifact in Test := false
 
@@ -35,11 +39,8 @@ pomExtra := (
 
 lsSettings
 
-LsKeys.tags in LsKeys.lsync := Seq("github", "gist")
+LsKeys.tags in LsKeys.lsync := Seq("future", "retry")
 
-libraryDependencies ++= Seq(
-  "me.lessis" %% "odelay-core" % "0.1.0-SNAPSHOT",
-  "org.scalatest" %% "scalatest" % "1.9.2" % "test")
+bintraySettings
 
-description := "a library of simple abstractions for asynchronously retrying failed scala.concurrent.Futures"
-
+resolvers += bintray.Opts.resolver.mavenRepo("softprops")

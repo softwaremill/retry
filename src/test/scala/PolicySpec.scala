@@ -1,7 +1,7 @@
 package retry
 
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
-import retry.Defaults.timer
+import odelay.Timer
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
@@ -9,6 +9,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 class PolicySpec extends FunSpec with BeforeAndAfterAll {
+
+  val timer = implicitly[Timer]
 
   override def afterAll() {
     timer.stop()
@@ -68,9 +70,9 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         assert(success.predicate(result) == true)
       }
       assert(took >= 90.millis === true,
-             "took less time than expected: %s" format took)
+             s"took less time than expected: $took")
       assert(took <= 110.millis === true,
-             "took more time than expected: %s" format took)
+             s"took more time than expected: $took")
     }
   }
 
@@ -85,9 +87,9 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         assert(success.predicate(result) === true, "predicate failed")
       }
       assert(took >= 90.millis === true,
-             "took less time than expected: %s" format took)
+             s"took less time than expected: $took")
       assert(took <= 110.millis === true,
-             "took more time than expected: %s" format took)
+             s"took more time than expected: $took")
     }
   }
 
@@ -99,8 +101,8 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         // this is very constrived but should serve as an example
         // of matching then dispatching a retry depending on
         // the value of the future when completed
-        case n if n == 0 => retry.When {
-          case n if n == 1 => retry.Pause(delay = 2.seconds)
+        case 0 => retry.When {
+          case 1 => retry.Pause(delay = 2.seconds)
         }
       }
       val future = policy(tries.next)
@@ -114,7 +116,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       val policy = retry.When {
         // this cond will never be met because
         // a cond for n == 0 is not defined
-        case n if n == 1 => retry.Directly()
+        case 1 => retry.Directly()
       }
 
       val future = policy(tries.next)
