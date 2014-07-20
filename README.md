@@ -23,7 +23,7 @@ Retry provides interfaces for common retry strategies that operate on Scala [Fut
 Basic usage requires three things
 
 - an implicit execution context for executing futures 
-- a definition of `retry.Success[-T](pred: T => Boolean)` to encode what "success" means for the type of your future
+- a definition of [Success][#defining-success] encode what "success" means for the type of your future
 - a block of code that results in a Scala [Future][fut].
 
 Depending on your strategy for retrying a future you may also need an [odelay.Timer][timer] for asynchronously scheduling followup attempts
@@ -57,8 +57,9 @@ If your future completes with anything other than 10, it will be considered a fa
 
 ### Sleep schedules
 
-Your application may run within a platform that provides its own way for scheduling tasks. If an `odelay.jdk.JdkTimer` isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, `odelay.netty.Timer` in the `odelay-netty` module or an `odelay.twitter.TwitterTimer` available in the `odelay-twitter` module. See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
+Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softprops/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softprops/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softprops/odelay#twittertimers) available in the `odelay-twitter` module.
 
+See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
 
 ### According to the Policy
 
