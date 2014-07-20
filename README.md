@@ -23,7 +23,7 @@ Retry provides interfaces for common retry strategies that operate on Scala [Fut
 Basic usage requires three things
 
 - an implicit execution context for executing futures 
-- a definition of [Success][#defining-success] encode what "success" means for the type of your future
+- a definition of [Success][defining-success] encode what "success" means for the type of your future
 - a block of code that results in a Scala [Future][fut].
 
 Depending on your strategy for retrying a future you may also need an [odelay.Timer][timer] for asynchronously scheduling followup attempts
