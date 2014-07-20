@@ -12,7 +12,7 @@ With sbt, add the following to your project's build.sbt
 
 ## usage
 
-Applications fail. We know this. Network connections drop. Connections timeout. Bad things happen.
+Applications fail. Network connections drop. Connections timeout. Bad things happen.
 
 Failure to address this will cause other bad things to happen. Effort is the measurement of how hard you try.
 
@@ -20,18 +20,19 @@ You can give your application perseverance with retry.
 
 Retry provides interfaces for common retry strategies that operate on Scala [Futures][fut].
 
-Basic usage requires four things 
+Basic usage requires three things
 
 - an implicit execution context for executing futures 
 - a definition of `retry.Success[-T](pred: T => Boolean)` to encode what "success" means for the type of your future
-- an [odelay.Timer][timer] for asynchronously scheduling followup attempts
-- a block of code that results in a `scala.concurrent.Future`
+- a block of code that results in a Scala [Future][fut].
 
-Retry provides a set of defaults that provide `retry.Success` definitions for `Option`, `Either`, `scala.util.Try`, and an partial function (defined with Success.definedAt(partialFunction)), and an `odelay.jdk.JdkTimer` for use as an `odelay.Timer` out of the box.
+Depending on your strategy for retrying a future you may also need an [odelay.Timer][timer] for asynchronously scheduling followup attempts
+
+Retry provides a set of defaults that provide `retry.Success` definitions for [Option][option], [Either][either], [Try][try], and a partial function (defined with Success.definedAt(partialFunction)) out of the box.
 
 ```scala
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 retry.Backoff()(Future {
   // something that can "fail"
@@ -67,7 +68,7 @@ Retry logic is implemented in modules whose behavior varies but all produce a co
 trait Policy {
   def apply[T](promise: () => Future[T])
      (implicit success: Success[T],
-          executor: ExecutionContext): Future[T]
+      executor: ExecutionContext): Future[T]
 }
 ```          
 
@@ -113,3 +114,6 @@ Doug Tangren (softprops) 2013-2014
 [timer]: https://github.com/softprops/odelay#timers
 [odelay]: https://github.com/softprops/odelay#readme
 [fut]: http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future
+[either]: http://www.scala-lang.org/api/current/index.html#scala.util.Either
+[option]: http://www.scala-lang.org/api/current/index.html#scala.Option
+[try]: http://www.scala-lang.org/api/current/index.html#scala.util.Try
