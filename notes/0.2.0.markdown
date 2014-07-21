@@ -61,3 +61,6 @@ For these cases retry exposes an adaptive interface called `retry.When` which re
       case RetryAt(time) => retry.Pause(delay = time.seconds)
     }
     policy(issueRateLimitedRequest)
+
+
+For more information see the project's [readme](https://github.com/softprops/retry/#readme)
