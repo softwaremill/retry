@@ -30,6 +30,14 @@ It was previously only possible to retry for a finite number of times. Sometimes
 
 The platform hooks for scheduling future retries at a later time was refactored out into its own library, [odelay](https://github.com/softprops/odelay#readme). Hence, this version of retry no longer requires multiple modules. Retry as a library is only repsonsible for providing retry logic, relying on odelay for future retry scheduling. Retries which previously required an `retry.Timer` in implicit scope now require an implicit `odelay.Timer`.
 
+### A new module name
+
+Since there is no longer any need for platform timer modules in retry, there is only one published module and it's module name has be simplified to just "retry".
+
+    resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
+
+    libraryDependencies += "me.lessis" %% "retry" % "0.2.0"   
+
 ### Successful composition
 
 A library for retrying operations has a heavy interest understanding what it means to be "successful". `retry.Success` is a type class for encoding the semantics for what a "success" means for your future. A `retry.Success` is still a `retry.Success` in this version. In this version, they are also more composable. A preference is also taken for the factory method for constructing new success instances. For illustration, see the example below
