@@ -46,3 +46,5 @@ bintraySettings
 bintray.Keys.packageLabels in bintray.Keys.bintray := (LsKeys.tags in LsKeys.lsync).value
 
 resolvers += bintray.Opts.resolver.mavenRepo("softprops")
+
+externalResolvers in LsKeys.lsync := (resolvers in bintray.Keys.bintray).value
