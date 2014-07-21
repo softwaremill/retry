@@ -16,9 +16,9 @@ scalaVersion := crossScalaVersions.value.last
 
 licenses :=
   Seq("MIT" ->
-      url(s"https://github.com/softprops/retry/blob/${version.value}/LICENSE"))
+      url(s"https://github.com/softprops/${name.value}/blob/${version.value}/LICENSE"))
 
-homepage := Some(url("https://github.com/softprops/retry/"))
+homepage := Some(url("https://github.com/softprops/${name.value}/"))
 
 publishArtifact in Test := false
 
@@ -42,5 +42,7 @@ lsSettings
 LsKeys.tags in LsKeys.lsync := Seq("future", "retry")
 
 bintraySettings
+
+bintray.Keys.packageLabels in bintray.Keys.bintray := (LsKeys.tags in LsKeys.lsync).value
 
 resolvers += bintray.Opts.resolver.mavenRepo("softprops")
