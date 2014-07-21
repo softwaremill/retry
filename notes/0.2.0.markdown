@@ -29,7 +29,7 @@ It was previously only possible to retry for a finite number of times. Sometimes
 
 ### Odelayed retries
 
-The platform hooks for scheduling future retries at a later time was refactored out into its own library, [odelay](https://github.com/softprops/odelay#readme). Hence, this version of retry no longer requires multiple modules. Retry as a library is only repsonsible for providing retry logic, relying on odelay for future retry scheduling. Retries which previously required an `retry.Timer` in implicit scope now require an implicit `odelay.Timer`.
+The platform hooks for scheduling future retries at a later time was refactored out into its own library, [odelay](https://github.com/softprops/odelay#readme). Hence, this version of retry no longer requires multiple modules. Retry as a library is only responsible for providing retry logic, relying on odelay for future retry scheduling. Retries which previously required an `retry.Timer` in implicit scope now require an implicit `odelay.Timer`.
 
 ### A new module name
 
