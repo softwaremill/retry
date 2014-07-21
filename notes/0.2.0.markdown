@@ -56,7 +56,7 @@ A library for retrying operations has a heavy interest understanding what it mea
      val both = a.and(b)
      
 This interface defines a simple algebra for Ints. Your application most like defines Futures which return a more complex type. Experiment with this new interface to compose different definitions of success for your applications types to enrich your retry experience.
-     
+
 If you are feeling adventurous, consider using `retry.Success.always` or `retry.Success.never` which will either infer success from any resulting value
 or no resulting value respectively.
 
