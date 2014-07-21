@@ -45,9 +45,9 @@ Retry needs to know what _success_ means in the context of your Future in order 
 
 It does this through a generic `Success[-T](pred: T => Boolean)` type class, where `T` matches the type your [Future][fut] will resolve to.
 
-Retry looks for this implicitly in within the scope of the retry.
+Retry looks for this definition within implicit scope of the retry.
 
-If you wish to define an application-specific definition of what "success" means for your future, you may do so by specifying the following in scope of the retry.
+You may wish define an application-specific definition of what "success" means for your future. You can do so by specifying the following in scope of the retry.
 
 ```scala
 implicit val perfectTen = Success[Int](_ == 10)
