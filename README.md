@@ -125,6 +125,23 @@ policy(execptionalAttempt)
 
 Note, The domain of the PartialFunction passed to When may cover both the exception thrown _or_ the successful result of the future.
 
+#### Suggested library usage
+
+Since all retry modules now produce a generic interface, a Policy. If you wish to write clients of services you may wish to make define
+a Success for the type of that service and capture an configurable reference to a Policy so that clients may swap policies based on use case.
+
+```scala
+case class Client(retryPolicy: retry.Policy = retry.Directly()) {
+  def request = retryPolicy(mkRequest)
+}
+
+val defaultClient = Client()
+
+val customClient = defaultClient.copy(
+  retryPolicy = retry.Backoff()
+)
+```
+
 Doug Tangren (softprops) 2013-2014
 
 [timer]: https://github.com/softprops/odelay#timers
