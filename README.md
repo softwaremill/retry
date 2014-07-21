@@ -8,8 +8,11 @@ don't give up
 
 With sbt, add the following to your project's build.sbt
 
-    libraryDependencies += "me.lessis" %% "retry-core" % "0.2.0"
+```scala
+resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
 
+libraryDependencies += "me.lessis" %% "retry-core" % "0.2.0"
+```
 ## usage
 
 Applications fail. Network connections drop. Connections timeout. Bad things happen.
