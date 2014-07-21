@@ -110,6 +110,21 @@ val future = retry.Backoff(4, 1.second) {
 }
 ```
 
+#### When
+
+All of the retry strategies above assume you are representing failure in your Future's result type. In cases where the
+result of your future is "exceptional". You can use the When module which takes a PartialFunction of Any to Policy.
+
+```scala
+val policy = retry.When {
+  case NonFatal(e) => retry.Pause(1.second)
+}
+
+policy(execptionalAttempt)
+```
+
+Note
+
 Doug Tangren (softprops) 2013-2014
 
 [timer]: https://github.com/softprops/odelay#timers
