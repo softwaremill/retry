@@ -123,7 +123,7 @@ val policy = retry.When {
 policy(execptionalAttempt)
 ```
 
-Note
+Note, The domain of the PartialFunction passed to When may cover both the exception thrown _or_ the successful result of the future.
 
 Doug Tangren (softprops) 2013-2014
 
