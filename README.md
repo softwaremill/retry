@@ -61,7 +61,7 @@ Your application may run within a platform that provides its own way for schedul
 
 See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
 
-### According to the Policy
+### According to Policy
 
 Retry logic is implemented in modules whose behavior varies but all produce a common interface. A Policy.
 
