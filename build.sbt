@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "retry"
 
-version := "0.2.0-SNAPSHOT"
+version := "0.2.0"
 
 description := "a library of simple primitives for asynchronously retrying Scala Futures"
 
@@ -18,7 +18,7 @@ licenses :=
   Seq("MIT" ->
       url(s"https://github.com/softprops/${name.value}/blob/${version.value}/LICENSE"))
 
-homepage := Some(url("https://github.com/softprops/${name.value}/"))
+homepage := Some(url(s"https://github.com/softprops/${name.value}/"))
 
 publishArtifact in Test := false
 
