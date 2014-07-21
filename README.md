@@ -11,7 +11,7 @@ With sbt, add the following to your project's build.sbt
 ```scala
 resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
 
-libraryDependencies += "me.lessis" %% "retry-core" % "0.2.0"
+libraryDependencies += "me.lessis" %% "retry" % "0.2.0"
 ```
 ## usage
 
