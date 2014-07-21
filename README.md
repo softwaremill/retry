@@ -127,7 +127,7 @@ Note, The domain of the PartialFunction passed to When may cover both the except
 
 #### Suggested library usage
 
-Since all retry modules now produce a generic interface, a Policy. If you wish to write clients of services you may wish to make define
+Since all retry modules now produce a generic interface, a `retry.Policy`, if you wish to write clients of services you may wish to make define
 a Success for the type of that service and capture an configurable reference to a Policy so that clients may swap policies based on use case.
 
 ```scala
