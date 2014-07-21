@@ -1,67 +1,162 @@
 # retry
 
+[![Build Status](https://travis-ci.org/softprops/retry.png?branch=master)](https://travis-ci.org/softprops/retry)
+
 don't give up
 
 ## install
 
 With sbt, add the following to your project's build.sbt
 
-    libraryDependencies += "me.lessis" %% "retry-core" % "0.1.0"
+    libraryDependencies += "me.lessis" %% "retry-core" % "0.2.0"
 
 ## usage
 
-Applications can fail a runtime. We know this. Network connections drop. Connections timeout. Bad things happen.
+Applications fail. Network connections drop. Connections timeout. Bad things happen.
 
-Don't let bad things cause other bad things to happen. Give applications a second chance to retry.
+Failure to address this will cause other bad things to happen. Effort is the measurement of how hard you try.
 
-Retry provides interfaces for common retry strategies that operate on `scala.util.Future`s.
+You can give your application perseverance with retry.
 
-Basic usage requires four things 
+Retry provides interfaces for common retry strategies that operate on Scala [Futures][fut].
+
+Basic usage requires three things
 
 - an implicit execution context for executing futures 
-- a definition of `retry.Success[-T](pred: T => Boolean)` to encode what "success" means for the type of your future
-- a `retry.Timer` for asynchronously scheduling a followup attempt
-- a block of code that results in a `scala.concurrent.Future`
+- a definition of [Success](#defining-success) encode what "success" means for the type of your future
+- a block of code that results in a Scala [Future][fut].
 
-Retry provides a set of defaults that uses `scala.concurrent.ExecutionContext.Implicits.global` as an execution context, `retry.Success` definitions for `Option`, `Either`, and `scala.util.Try`, and a `retry.jdk.JdkTimer` as a `retry.Timer` out of the box.
+Depending on your strategy for retrying a future you may also need an [odelay.Timer][timer] for asynchronously scheduling followup attempts
+
+Retry provides a set of defaults that provide `retry.Success` definitions for [Option][option], [Either][either], [Try][try], and a partial function (defined with Success.definedAt(partialFunction)) out of the box.
 
 ```scala
-import scala.concurrent._
-import retry.Defaults._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 retry.Backoff()(Future {
-  // something that can fail
+  // something that can "fail"
 })
 ```
 
+### Defining success
 
-### Defining success.
+Retry needs to know what _success_ means in the context of your Future in order to know when to retry an operation.
 
-Retry needs to know what failure or success means in order to know when to retry. It does this through a typed `Success[-T](pred: T => Boolean)` type.
-Where `T` matches the type your `scala.util.Future[T]` is defined with. Retry looks for this implicitly in within the scope of retrying.
-If you are using the `retry.Defaults` you will already have in scope a definition for success for `Either`, `scala.util.Try`, and `Option` types.
-If you wish to define an application-specific definition of what "success" means for your future,
-you may do so by specifying the following in scope of the retry.
+It does this through a generic `Success[-T](pred: T => Boolean)` type class, where `T` matches the type your [Future][fut] will resolve to.
+
+Retry looks for this definition within implicit scope of the retry.
+
+You may wish define an application-specific definition of what "success" means for your future. You can do so by specifying the following in scope of the retry.
 
 ```scala
-implicit val success = new Success[Int](_ > 10)
+implicit val perfectTen = Success[Int](_ == 10)
 ```
 
-If your future completes with an int less than or equal to 10. It is then considered a failure and will be retried.
+If your future completes with anything other than 10, it will be considered a failure and will be retried. Here's to you, tiger mom!
+
+Success values may also be composed with `and` and `or` semantics
+
+```scala
+// will be considered a success when the preconditions of both successA and successB are met
+val successC = successA.and(successB)
+
+// will be considered a success when the predconditions of either successC or successD are met
+val successE = successC.or(successD)
+```
 
 ### Sleep schedules
 
-Your application may run within a platform that provides its own way for scheduling tasks to happen in the future. If `retry.jdk.JdkTimer` isn't what you're looking for, you may wish to use the `retry.Timer` for netty, `retry.netty.Timer` in the `retry-netty` module or a `retry.twitter.Timer` available in the `retry-twitter` module. If these also aren't what you're looking for, you can define your own in the scope of the retry.
+Rather than blocking a thread, retry attempts are scheduled using Timers. Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softprops/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softprops/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softprops/odelay#twittertimers) available in the `odelay-twitter` module.
+
+See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
+
+### According to Policy
+
+Retry logic is implemented in modules whose behavior vary but all produce a common interface: a `retry.Policy`.
 
 ```scala
-class YourTimer extends retry.Timer {
-  def apply[T](len: Long, unit: TimeUnit, todo: => T) = new retry.Timeout {
-    def cancel() {
-      // return something which may be cancelled
-    }
-  }
+trait Policy {
+  def apply[T](promise: () => Future[T])
+     (implicit success: Success[T],
+      executor: ExecutionContext): Future[T]
 }
+```          
 
-implicit val timer = new YourTimer 
+#### Directly
+
+The `retry.Directly` module defines interfaces for retrying a future directly
+after a failed attempt.
+
+```scala
+// retry 4 times
+val future = retry.Directly(4) {
+  attempt
+}
 ```
 
-Doug Tangren (softprops) 2013
+#### Pause
+
+The `retry.Pause` module defines interfaces for retrying a future with a configurable pause in between attempts
+
+```scala
+// retry 3 times pausing 30 seconds in between attempts
+val future = retry.Pause(3, 30.seconds) {
+  attempt
+}
+```
+
+#### Backoff
+
+The `retry.Backoff` modules defines interfaces for retrying a future with a configureable pause and exponential
+backoff factor.
+
+
+```scala
+// retry 4 times with a delay of 1 second which will be multipled
+// by 2 on every attempt
+val future = retry.Backoff(4, 1.second) {
+  attempt
+}
+```
+
+#### When
+
+All of the retry strategies above assume you are representing failure in your Future's result type. In cases where the
+result of your future is "exceptional". You can use the When module which takes a PartialFunction of Any to Policy.
+
+```scala
+val policy = retry.When {
+  case NonFatal(e) => retry.Pause(1.second)
+}
+
+policy(execptionalAttempt)
+```
+
+Note, The domain of the PartialFunction passed to When may cover both the exception thrown _or_ the successful result of the future.
+
+#### Suggested library usage
+
+Since all retry modules now produce a generic interface, a `retry.Policy`, if you wish to write clients of services you may wish to make define
+a Success for the type of that service and capture an configurable reference to a Policy so that clients may swap policies based on use case.
+
+```scala
+case class Client(retryPolicy: retry.Policy = retry.Directly()) {
+  def request = retryPolicy(mkRequest)
+}
+
+val defaultClient = Client()
+
+val customClient = defaultClient.copy(
+  retryPolicy = retry.Backoff()
+)
+```
+
+Doug Tangren (softprops) 2013-2014
+
+[timer]: https://github.com/softprops/odelay#timers
+[odelay]: https://github.com/softprops/odelay#readme
+[fut]: http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future
+[either]: http://www.scala-lang.org/api/current/index.html#scala.util.Either
+[option]: http://www.scala-lang.org/api/current/index.html#scala.Option
+[try]: http://www.scala-lang.org/api/current/index.html#scala.util.Try
