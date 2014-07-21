@@ -55,15 +55,25 @@ implicit val perfectTen = Success[Int](_ == 10)
 
 If your future completes with anything other than 10, it will be considered a failure and will be retried. Here's to you, tiger mom!
 
+Success values may also be composed with `and` and `or` semantics
+
+```scala
+// will be considered a success when the preconditions of both successA and successB are met
+val successC = successA.and(successB)
+
+// will be considered a success when the predconditions of either successC or successD are met
+val successE = successC.or(successD)
+```
+
 ### Sleep schedules
 
-Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softprops/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softprops/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softprops/odelay#twittertimers) available in the `odelay-twitter` module.
+Rather than blocking a thread, retry attempts are scheduled using Timers. Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softprops/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softprops/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softprops/odelay#twittertimers) available in the `odelay-twitter` module.
 
 See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
 
 ### According to Policy
 
-Retry logic is implemented in modules whose behavior varies but all produce a common interface. A Policy.
+Retry logic is implemented in modules whose behavior vary but all produce a common interface: a `retry.Policy`.
 
 ```scala
 trait Policy {
