@@ -1,0 +1,21 @@
+{
+  "organization" : "me.lessis",
+  "name" : "retry",
+  "version" : "0.2.0",
+  "description" : "a library of simple primitives for asynchronously retrying Scala Futures",
+  "site" : "https://github.com/softprops/retry/",
+  "tags" : [ "future", "retry" ],
+  "docs" : "",
+  "resolvers" : [ "http://dl.bintray.com/content/softprops/maven" ],
+  "dependencies" : [ {
+    "organization" : "me.lessis",
+    "name" : "odelay-core",
+    "version" : "0.1.0"
+  } ],
+  "scalas" : [ "2.10.4", "2.11.1" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/retry/blob/0.2.0/LICENSE"
+  } ],
+  "sbt" : false
+}
