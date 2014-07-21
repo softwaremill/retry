@@ -41,7 +41,7 @@ retry.Backoff()(Future {
 
 ### Defining success
 
-Retry needs to know what _failure_ or _success_ means in the context of your Future in order to know when to retry an operation.
+Retry needs to know what _success_ means in the context of your Future in order to know when to retry an operation.
 
 It does this through a generic `Success[-T](pred: T => Boolean)` type class, where `T` matches the type your [Future][fut] will resolve to.
 
