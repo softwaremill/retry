@@ -2,12 +2,13 @@
 
 ### retry.Policy
 
-Retries are now defined in terms of a common and easier to work with interface, a `retry.Policy`, which is essentially the interface
+Retries are now defined in terms of a common and easier to work with interface, a `retry.Policy`, which is in essence the type
 
     () => Future[T] => Future[T]
     
-with a few implicit parameters. One for an instance of `retry.Success[T]` and one for an ExecutionContext.
-This makes retries easier to pass around as a general interface.
+with a few implicit parameters: one for an instance of a `retry.Success[T]` and one for an `scala.concurrent.ExecutionContext`.
+
+This makes the packaging of retry logic more portable as easier to swap implementations in an out.
 
     trait Policy {
       def apply[T](promise: () => Future[T])
@@ -19,7 +20,7 @@ The previous three categories of retry attempts, `retry.Directly`, `retry.Pause`
 
 ### retry forever
 
-It was previously only possible to retry for a finite number of times. Sometimes you want to try, try, and try again until your future's value meets your definition of `retry.Success`. Each of the 3 retry modules now expose a `forever` method that will keep retrying until a successful result is produced using semantics tied to the type of retry.
+It was previously only possible to retry for a finite number of times. Sometimes you want to try, try, and try again until your future arrives at a succesful conclusion. Each of the 3 retry modules now expose a `forever` method that will keep retrying until a successful result is produced using semantics tied to the type of retry.
 
     // retry pausing 1 second forever until tryHarder tries hard enough
     val forever = retry.Pause.forever(1.second)
@@ -56,14 +57,15 @@ A library for retrying operations has a heavy interest understanding what it mea
      
 This interface defines a simple algebra for Ints. Your application most like defines Futures which return a more complex type. Experiment with this new interface to compose different definitions of success for your applications types to enrich your retry experience.
      
-If you are feeling adventurous you consider `retry.Success.always` or `retry.Success.never` which will either infer success from any resulting value
+If you are feeling adventurous, consider using `retry.Success.always` or `retry.Success.never` which will either infer success from any resulting value
 or no resulting value respectively.
 
 ### re-determine how to retry When the right stars are in alignment
 
-Sometimes things don't go according to plan. Sometimes you are working with "exceptional" code that expresses failure with fantastic runtime exceptions.
+Sometimes things don't go according to plan. Sometimes you are forced to share the wheel with "exceptional" code that expresses failure with fantastic runtime exceptions.
+
 Sometimes you are working with a rate-limited service that will respond with a suggested time to come back knocking at a later time.
-For these cases retry exposes an adaptive interface called `retry.When` which return takes a PartialFunction of Any to Policy.
+For these types of usecases, retry exposes an adaptive interface called `retry.When` which takes a PartialFunction of Any to retry.Policy which allows you to adapt to any kind of failure you throw at it.
 
     val policy = retry.When {
       case RetryAt(time) => retry.Pause(delay = time.seconds)
