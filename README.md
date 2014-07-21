@@ -39,7 +39,7 @@ retry.Backoff()(Future {
 })
 ```
 
-### Defining success.
+### Defining success
 
 Retry needs to know what _failure_ or _success_ means in the context of your Future in order to know when to retry an operation.
 
