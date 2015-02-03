@@ -37,7 +37,7 @@ Retry provides a set of defaults that provide `retry.Success` definitions for [O
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-retry.Backoff()(Future {
+retry.Backoff()(() => Future {
   // something that can "fail"
 })
 ```
@@ -93,7 +93,7 @@ after a failed attempt.
 
 ```scala
 // retry 4 times
-val future = retry.Directly(4) {
+val future = retry.Directly(4) { () =>
   attempt
 }
 ```
@@ -104,7 +104,7 @@ The `retry.Pause` module defines interfaces for retrying a future with a configu
 
 ```scala
 // retry 3 times pausing 30 seconds in between attempts
-val future = retry.Pause(3, 30.seconds) {
+val future = retry.Pause(3, 30.seconds) { () =>
   attempt
 }
 ```
@@ -118,7 +118,7 @@ backoff factor.
 ```scala
 // retry 4 times with a delay of 1 second which will be multipled
 // by 2 on every attempt
-val future = retry.Backoff(4, 1.second) {
+val future = retry.Backoff(4, 1.second) { () =>
   attempt
 }
 ```
