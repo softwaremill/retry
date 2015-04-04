@@ -3,8 +3,21 @@ package retry
 import odelay.{ Delay, Timer }
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import java.util.concurrent.TimeUnit
+
+// This case class and its implicit conversions allow us to accept both
+// `() => Future[T]` and `Future[T]`-by-name as Policy.apply arguments.
+// Note that these two types are the same after erasure.
+case class PromiseWrapper[T](
+  promise: () => Future[T]
+)
+
+object PromiseWrapper {
+  implicit def fromFuture[T](promise: () => Future[T]): PromiseWrapper[T] = PromiseWrapper(promise)
+  implicit def toFuture[T](pw: PromiseWrapper[T]): () => Future[T] = pw.promise
+}
 
 object Directly {
 
@@ -12,7 +25,7 @@ object Directly {
   def forever: Policy =
     new Policy {
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] =
          retry(promise, promise)
@@ -22,7 +35,7 @@ object Directly {
   def apply(max: Int = 3): Policy =
     new CountingPolicy {
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
           def run(max: Int): Future[T] = countdown(max, promise, run)
@@ -39,7 +52,7 @@ object Pause {
    (implicit timer: Timer): Policy =
     new Policy { self =>
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] =
          retry(promise, { () =>
@@ -52,7 +65,7 @@ object Pause {
    (implicit timer: Timer): Policy =
     new CountingPolicy {
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
           def run(max: Int): Future[T] = countdown(
@@ -70,7 +83,7 @@ object Backoff {
    (implicit timer: Timer): Policy =
     new Policy {
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
           def run(delay: FiniteDuration): Future[T] = retry(promise, { () =>
@@ -90,7 +103,7 @@ object Backoff {
    (implicit timer: Timer): Policy =
     new CountingPolicy {
       def apply[T]
-        (promise: () => Future[T])
+        (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
           def run(max: Int, delay: FiniteDuration): Future[T] = countdown(
@@ -121,7 +134,7 @@ object When {
   type Depends = PartialFunction[Any, Policy]
   def apply(depends: Depends): Policy =
     new Policy {
-      def apply[T](promise: () => Future[T])
+      def apply[T](promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
          val fut = promise()
@@ -157,9 +170,15 @@ trait CountingPolicy extends Policy {
  *  specific to implementations
  */
 trait Policy {
-  def apply[T](promise: () => Future[T])
+
+  def apply[T](pw: PromiseWrapper[T])
     (implicit success: Success[T],
      executor: ExecutionContext): Future[T]
+
+  def apply[T](promise: => Future[T])
+    (implicit success: Success[T],
+    executor: ExecutionContext): Future[T] =
+      apply { () => promise }
 
   protected def retry[T](
     promise: () => Future[T],
