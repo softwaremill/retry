@@ -68,6 +68,20 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       Await.ready(future, Duration.Inf)
       assert(counter.get() === 2)
     }
+
+    it ("should retry futures passed by-name instead of caching results") {
+      implicit val success = Success.always
+      val counter = new AtomicInteger()
+      val future = retry.Directly(1) {
+        counter.getAndIncrement() match {
+          case 1 => Future.successful("yay!")
+          case _ => Future.failed(new RuntimeException("failed"))
+        }
+      }
+      val result: String = Await.result(future, Duration.Inf)
+      assert(counter.get() == 2)
+      assert(result == "yay!")
+    }
   }
 
   describe("retry.Pause") {
