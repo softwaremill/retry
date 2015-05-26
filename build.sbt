@@ -1,16 +1,18 @@
+import BintrayPlugin.autoImport._
+
 organization := "me.lessis"
 
 name := "retry"
 
-version := "0.2.0"
+version := "0.2.1"
 
 description := "a library of simple primitives for asynchronously retrying Scala Futures"
 
-crossScalaVersions := Seq("2.10.4", "2.11.1")
+crossScalaVersions := Seq("2.10.5", "2.11.6")
 
 libraryDependencies ++= Seq(
   "me.lessis" %% "odelay-core" % "0.1.0",
-  "org.scalatest" %% "scalatest" % "2.2.0" % "test")
+  "org.scalatest" %% "scalatest" % "2.2.4" % "test")
 
 scalacOptions += "-feature"
 
@@ -43,10 +45,8 @@ lsSettings
 
 LsKeys.tags in LsKeys.lsync := Seq("future", "retry")
 
-bintraySettings
+bintrayPackageLabels := (LsKeys.tags in LsKeys.lsync).value
 
-bintray.Keys.packageLabels in bintray.Keys.bintray := (LsKeys.tags in LsKeys.lsync).value
+resolvers += sbt.Resolver.bintrayRepo("softprops","maven")
 
-resolvers += bintray.Opts.resolver.mavenRepo("softprops")
-
-externalResolvers in LsKeys.lsync := (resolvers in bintray.Keys.bintray).value
+externalResolvers in LsKeys.lsync := (resolvers in bintray).value
