@@ -5,5 +5,6 @@ import java.util.concurrent.TimeUnit
 
 object Defaults {
   val delay: FiniteDuration = Duration(500, TimeUnit.MILLISECONDS)
+  val maxDelay: Duration = Duration.Inf
 }
 

@@ -116,6 +116,21 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       assert(took <= 110.millis === true,
              s"took more time than expected: $took")
     }
+
+    it ("should wait up to a max time each time") {
+      implicit val success = Success[Int](_ == 2)
+      val tries = forwardCountingFutureStream().iterator
+      val policy = retry.Backoff(2, 30.millis, maxDelay = 50.millis)
+      val took = time {
+        val result = Await.result(policy(tries.next),
+          80.millis + 20.millis)
+        assert(success.predicate(result) === true, "predicate failed")
+      }
+      assert(took >= 80.millis === true,
+        s"took less time than expected: $took")
+      assert(took <= 100.millis === true,
+        s"took more time than expected: $took")
+    }
   }
 
   describe("retry.When") {
