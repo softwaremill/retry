@@ -77,9 +77,14 @@ object Pause {
 }
 
 object Backoff {
+  private def nextDelay(calculatedDelay: FiniteDuration, maxDelay: Duration): FiniteDuration =
+    maxDelay match {
+      case _: Duration.Infinite => calculatedDelay
+      case delay: FiniteDuration => List(calculatedDelay, delay).min
+    }
 
   /** Retry with exponential backoff forever */
-  def forever(delay: FiniteDuration = Defaults.delay, base: Int = 2)
+  def forever(delay: FiniteDuration = Defaults.delay, base: Int = 2, maxDelay: Duration = Defaults.maxDelay)
    (implicit timer: Timer): Policy =
     new Policy {
       def apply[T]
@@ -88,7 +93,7 @@ object Backoff {
          executor: ExecutionContext): Future[T] = {
           def run(delay: FiniteDuration): Future[T] = retry(promise, { () =>
             Delay(delay) {
-              run(Duration(delay.length * base, delay.unit))
+              run(nextDelay(delay * base, maxDelay))
             }.future.flatMap(identity)
           })
           run(delay)
@@ -99,7 +104,8 @@ object Backoff {
   def apply(
     max: Int = 8,
     delay: FiniteDuration = Defaults.delay,
-    base: Int = 2)
+    base: Int = 2,
+    maxDelay: Duration = Defaults.maxDelay)
    (implicit timer: Timer): Policy =
     new CountingPolicy {
       def apply[T]
@@ -109,7 +115,7 @@ object Backoff {
           def run(max: Int, delay: FiniteDuration): Future[T] = countdown(
             max, promise,
             count => Delay(delay) {
-              run(count, Duration(delay.length * base, delay.unit))
+              run(count, nextDelay(delay * base, maxDelay))
             }.future.flatMap(identity))
           run(max, delay)
         }
