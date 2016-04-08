@@ -76,6 +76,78 @@ object Pause {
     }
 }
 
+/** A retry policy which will back off using a configurable policy which
+ *  incorporates random jitter. This has the advantage of reducing contention
+ *  if you have threaded clients using the same service.
+ *
+ *  {{{
+ *  val policy = retry.JitterBackoff()
+ *  val future = policy(issueRequest)
+ *  }}}
+ *
+ *  The following pre-made jitter algorithms are available for you to use:
+ *
+ *  - [[retry.Jitter.none]]
+ *  - [[retry.Jitter.full]]
+ *  - [[retry.Jitter.equal]]
+ *  - [[retry.Jitter.decorrelated]]
+ *
+ *  You can choose one like this:
+ *  {{{
+ *  implicit val jitter = retry.Jitter.full(cap = 5.minutes)
+ *  val policy = retry.JitterBackoff(1 second)
+ *  val future = policy(issueRequest)
+ *  }}}
+ *
+ *  If a jitter policy isn't in scope, it will use [[retry.Jitter.full]] by
+ *  default which tends to cause clients slightly less work at the cost of
+ *  slightly more time.
+ *
+ *  For more information about the algorithms, see the following article:
+ *
+ *  [[https://www.awsarchitectureblog.com/2015/03/backoff.html]]
+ */
+object JitterBackoff {
+
+  /** Retry with exponential backoff + jitter forever */
+  def forever(delay: FiniteDuration = Defaults.delay)
+    (implicit timer: Timer,
+     jitter: Jitter = Defaults.jitter): Policy =
+      new Policy {
+        def apply[T]
+          (promise: PromiseWrapper[T])
+          (implicit success: Success[T],
+           executor: ExecutionContext): Future[T] = {
+            def run(attempt: Int, sleep: FiniteDuration): Future[T] = retry(promise, { () =>
+              Delay(delay) {
+                run(attempt + 1, jitter(delay, sleep, attempt))
+              }.future.flatMap(identity)
+            })
+            run(1, delay)
+          }
+      }
+
+  /** Retry with exponential backoff + jitter for a max number of times */
+  def apply(
+    max: Int = 8,
+    delay: FiniteDuration = Defaults.delay)
+    (implicit timer: Timer,
+     jitter: Jitter = Defaults.jitter): Policy =
+      new CountingPolicy {
+        override def apply[T]
+          (promise: PromiseWrapper[T])
+          (implicit success: Success[T],
+           executor: ExecutionContext): Future[T] = {
+          def run(attempt: Int, max: Int, sleep: FiniteDuration): Future[T] = countdown(
+            max, promise,
+            count => Delay(sleep) {
+              run(attempt + 1, count, jitter(delay, sleep, attempt))
+            }.future.flatMap(identity))
+          run(1, max, delay)
+        }
+      }
+}
+
 object Backoff {
 
   /** Retry with exponential backoff forever */
