@@ -119,7 +119,7 @@ object JitterBackoff {
           (implicit success: Success[T],
            executor: ExecutionContext): Future[T] = {
             def run(attempt: Int, sleep: FiniteDuration): Future[T] = retry(promise, { () =>
-              Delay(delay) {
+              Delay(sleep) {
                 run(attempt + 1, jitter(delay, sleep, attempt))
               }.future.flatMap(identity)
             })
