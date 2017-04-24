@@ -2,15 +2,18 @@ package retry
 
 import java.util.Random
 
-import org.scalatest.{ FunSpec, BeforeAndAfterAll }
+import org.scalatest.{ AsyncFunSpec, BeforeAndAfterAll }
 import odelay.Timer
-import scala.annotation.tailrec
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Future }
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 
-class PolicySpec extends FunSpec with BeforeAndAfterAll {
+class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
+
+    // needed so we do not get a scalatest EC error
+  implicit override def executionContext =
+    scala.concurrent.ExecutionContext.Implicits.global
+
 
   val timer = implicitly[Timer]
   val random = new Random()
@@ -37,29 +40,27 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
     it ("should retry a future for a specified number of times") {
       implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
-      val result = Await.result(retry.Directly(3)(tries.next),
-                                1.millis)
-      assert(success.predicate(result) === true)
+      retry.Directly(3)(tries.next).map(result => assert(success.predicate(result) === true))
     }
 
     it ("should fail when expected") {
       val success = implicitly[Success[Option[Int]]]
       val tries = Future(None: Option[Int])
-      val result = Await.result(retry.Directly(2)({ () => tries }),
-                                1.millis)
-      assert(success.predicate(result) === false)
+      retry.Directly(2)(tries).map(result => assert(success.predicate(result) === false))
     }
 
     it ("should deal with future failures") {
       implicit val success = Success.always
-      val policy = retry.Directly(3)
-      val counter = new AtomicInteger()
-      val future = policy { () =>
+      val policy = retry.Directly(3) // was 3
+      val counter = new AtomicInteger(0)
+      val future = policy {
         counter.incrementAndGet()
         Future.failed(new RuntimeException("always failing"))
       }
-      Await.ready(future, Duration.Inf)
-      assert(counter.get() === 4)
+      // expect failure after 1+3 tries
+      future.failed.map{t =>
+        assert(counter.get() === 4 && t.getMessage === "always failing")
+      }
     }
 
     it ("should accept a future in reduced syntax format") {
@@ -69,8 +70,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         counter.incrementAndGet()
         Future.failed(new RuntimeException("always failing"))
       }
-      Await.ready(future, Duration.Inf)
-      assert(counter.get() === 2)
+      future.failed.map(t => assert(counter.get() === 2 && t.getMessage === "always failing"))
     }
 
     it ("should retry futures passed by-name instead of caching results") {
@@ -82,9 +82,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
           case _ => Future.failed(new RuntimeException("failed"))
         }
       }
-      val result: String = Await.result(future, Duration.Inf)
-      assert(counter.get() == 2)
-      assert(result == "yay!")
+      future.map(result => assert(counter.get() === 2 && result === "yay!"))
     }
   }
 
@@ -93,15 +91,15 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
       val policy = retry.Pause(3, 30.millis)
-      val took = time {
-        val result = Await.result(policy(tries.next),
-                                  90.seconds + 20.millis)
-        assert(success.predicate(result) == true)
+      val marker_base = System.currentTimeMillis
+      val marker = new AtomicLong(0)
+
+      val runF = policy({marker.set(System.currentTimeMillis); tries.next})
+      runF.map{ result =>
+        val delta = marker.get() - marker_base
+        assert(success.predicate(result) == true &&
+          delta >= 90 && delta <= 200) // was 110, depends on how hot runtime is
       }
-      assert(took >= 90.millis === true,
-             s"took less time than expected: $took")
-      assert(took <= 110.millis === true,
-             s"took more time than expected: $took")
     }
   }
 
@@ -110,17 +108,17 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       implicit val success = Success[Int](_ == 2)
       val tries = forwardCountingFutureStream().iterator
       val policy = retry.Backoff(2, 30.millis)
-      val took = time {
-        val result = Await.result(policy(tries.next),
-                                  90.millis + 20.millis)
-        assert(success.predicate(result) === true, "predicate failed")
+      val marker_base = System.currentTimeMillis
+      val marker = new AtomicLong(0)
+      val runF = policy({marker.set(System.currentTimeMillis); tries.next})
+      runF.map{result =>
+        val delta = marker.get() - marker_base
+        assert(success.predicate(result)===true &&
+          delta >= 90 && delta <= 200) // was 110
       }
-      assert(took >= 90.millis === true,
-             s"took less time than expected: $took")
-      assert(took <= 110.millis === true,
-             s"took more time than expected: $took")
     }
   }
+
 
   def testJitterBackoff(name: String, algoCreator: FiniteDuration => Jitter): Unit = {
     describe(s"retry.JitterBackoff.$name") {
@@ -130,8 +128,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         implicit val algo = algoCreator(10.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = retry.JitterBackoff(3, 1.milli)
-        val result = Await.result(policy(tries.next), 1.second)
-        assert(success.predicate(result) === true)
+        policy(tries.next).map(result => assert(success.predicate(result) === true))
       }
 
       it ("should fail when expected") {
@@ -139,9 +136,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         val success = implicitly[Success[Option[Int]]]
         val tries = Future(None: Option[Int])
         val policy = retry.JitterBackoff(3, 1.milli)
-        val result = Await.result(policy({ () => tries }),
-          1.second)
-        assert(success.predicate(result) === false)
+        policy({ () => tries }).map(result => assert(success.predicate(result) === false))
       }
 
       it ("should deal with future failures") {
@@ -153,8 +148,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
           counter.incrementAndGet()
           Future.failed(new RuntimeException("always failing"))
         }
-        Await.ready(future, Duration.Inf)
-        assert(counter.get() === 4)
+        future.failed.map(t => assert(counter.get() === 4 && t.getMessage === "always failing"))
       }
 
       it ("should retry futures passed by-name instead of caching results") {
@@ -168,9 +162,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
             case _ => Future.failed(new RuntimeException("failed"))
           }
         }
-        val result: String = Await.result(future, Duration.Inf)
-        assert(counter.get() == 2)
-        assert(result == "yay!")
+        future.map(result => assert(counter.get() == 2 && result === "yay!"))
       }
 
       it ("should pause with multiplier and jitter between retries") {
@@ -178,17 +170,14 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         implicit val algo = algoCreator(1000.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = retry.JitterBackoff(5, 50.millis)
+        val marker_base = System.currentTimeMillis
+        val marker = new AtomicLong(0)
 
-        val took = time {
-          val result = Await.result(policy(tries.next),
-            Duration.Inf)
-          assert(success.predicate(result) === true, "predicate failed")
+        policy({marker.set(System.currentTimeMillis); tries.next}).map{ result =>
+          val delta = marker.get() - marker_base
+          assert(success.predicate(result) === true &&
+            delta >= 0 && delta <= 2000)
         }
-
-        assert(took >= 0.millis === true,
-          s"took less time than expected: $took")
-        assert(took <= 2000.millis === true,
-          s"took more time than expected: $took")
       }
 
       it ("should also work when invoked as forever") {
@@ -196,17 +185,14 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         implicit val algo = algoCreator(1000.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = retry.JitterBackoff.forever(50.millis)
+        val marker_base = System.currentTimeMillis
+        val marker = new AtomicLong(0)
 
-        val took = time {
-          val result = Await.result(policy(tries.next),
-            Duration.Inf)
-          assert(success.predicate(result) === true, "predicate failed")
+        policy({marker.set(System.currentTimeMillis); tries.next}).map{ result =>
+          val delta = marker.get() - marker_base
+          assert(success.predicate(result) === true &&
+            delta >= 0 && delta <= 2000)
         }
-
-        assert(took >= 0.millis === true,
-          s"took less time than expected: $took")
-        assert(took <= 2000.millis === true,
-          s"took more time than expected: $took")
       }
     }
   }
@@ -229,8 +215,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         }
       }
       val future = policy(tries.next)
-      val result = Await.result(future, 2.seconds)
-      assert(success.predicate(result) === true)
+      future.map(result => assert(success.predicate(result) === true))
     }
 
     it ("should retry but only when condition is met") {
@@ -243,8 +228,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
       }
 
       val future = policy(tries.next)
-      val result = Await.result(future, 1.millis)
-      assert(success.predicate(result) === false)
+      future.map( result => assert(success.predicate(result) === false))
     }
 
     it ("should handle future failures") {
@@ -259,8 +243,7 @@ class PolicySpec extends FunSpec with BeforeAndAfterAll {
         // lift an exception into a new policy
         case RetryAfter(duration) => Pause(delay = duration)
       }
-      val result = Await.result(policy(run), Duration.Inf)
-      assert(result === true)
+      policy(run).map(result => assert(result === true))
     }
   }
 }

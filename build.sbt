@@ -4,19 +4,26 @@ organization := "me.lessis"
 
 name := "retry"
 
-version := "0.2.1"
+version := "0.3.0"
 
 description := "a library of simple primitives for asynchronously retrying Scala Futures"
 
-crossScalaVersions := Seq("2.10.5", "2.11.6")
+crossScalaVersions := Seq("2.10.5", "2.11.6", "2.12.1")
+scalaVersion in ThisBuild := crossScalaVersions.value.last
 
-libraryDependencies ++= Seq(
-  "me.lessis" %% "odelay-core" % "0.1.0",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test")
+val libs = Seq(
+  "me.lessis" %% "odelay-core" % "0.2.0",
+  "org.scalatest" %% "scalatest" % "3.0.1" % "test")
 
-scalacOptions += "-feature"
+// remove me
+resolvers += Resolver.file("Local", file( Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-scalaVersion := crossScalaVersions.value.last
+lazy val retry = (crossProject in file ("."))
+  .settings(libraryDependencies ++= libs,
+    scalacOptions += "-feature")
+
+lazy val retryJs = retry.js
+lazy val retryJvm = retry.jvm
 
 licenses :=
   Seq("MIT" ->
