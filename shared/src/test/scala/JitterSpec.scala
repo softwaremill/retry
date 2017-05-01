@@ -10,7 +10,8 @@ import scala.concurrent.duration._
 import language.postfixOps
 
 class JitterSpec extends FunSpec {
-  val rng = new SecureRandom()
+  //val rng = new SecureRandom()
+  val rng = new java.util.Random()
   val rand = Jitter.randomSource(rng)
   val cap = 2000 milliseconds
 

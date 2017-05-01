@@ -8,14 +8,13 @@ import scala.concurrent.{ Future }
 import scala.concurrent.duration._
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 
-class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
+abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
     // needed so we do not get a scalatest EC error
   implicit override def executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
-
-  val timer = implicitly[Timer]
+  implicit val timer: Timer
   val random = new Random()
   val randomSource = Jitter.randomSource(random)
 

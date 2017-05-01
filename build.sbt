@@ -11,16 +11,29 @@ description := "a library of simple primitives for asynchronously retrying Scala
 crossScalaVersions := Seq("2.10.5", "2.11.6", "2.12.1")
 scalaVersion in ThisBuild := crossScalaVersions.value.last
 
-val libs = Seq(
-  "me.lessis" %% "odelay-core" % "0.2.0",
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test")
+lsSettings
 
-// remove me
-resolvers += Resolver.file("Local", file( Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
+val commonSettings = lsSettings ++ Seq(
+  LsKeys.tags in LsKeys.lsync := Seq("future", "retry"),
+  bintrayPackageLabels := (LsKeys.tags in LsKeys.lsync).value,
+  externalResolvers in LsKeys.lsync := (resolvers in bintray).value,
+  scalacOptions += "-feature",
+  resolvers += sbt.Resolver.bintrayRepo("softprops","maven")
+)
 
 lazy val retry = (crossProject in file ("."))
-  .settings(libraryDependencies ++= libs,
-    scalacOptions += "-feature")
+  .settings(commonSettings: _*)
+  .jvmSettings(
+    libraryDependencies ++=
+      Seq("org.scalatest" %% "scalatest" % "3.0.1" % "test",
+        "me.lessis" %% "odelay-core" % "0.2.0")
+  )
+  .jsSettings(
+    libraryDependencies ++=
+      Seq("org.scalatest" %%% "scalatest" % "3.0.1" % "test",
+        "me.lessis" %%% "odelay-core" % "0.2.0")
+  )
+
 
 lazy val retryJs = retry.js
 lazy val retryJvm = retry.jvm
@@ -48,12 +61,3 @@ pomExtra := (
   </developer>
   </developers>)
 
-lsSettings
-
-LsKeys.tags in LsKeys.lsync := Seq("future", "retry")
-
-bintrayPackageLabels := (LsKeys.tags in LsKeys.lsync).value
-
-resolvers += sbt.Resolver.bintrayRepo("softprops","maven")
-
-externalResolvers in LsKeys.lsync := (resolvers in bintray).value
