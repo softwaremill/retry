@@ -1,10 +1,10 @@
 import BintrayPlugin.autoImport._
 
-organization := "me.lessis"
+organization in ThisBuild := "me.lessis"
 
-name := "retry"
+name in ThisBuild := "retry"
 
-version := "0.3.0"
+version in ThisBuild := "0.3.0"
 
 description := "a library of simple primitives for asynchronously retrying Scala Futures"
 
