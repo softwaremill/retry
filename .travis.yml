@@ -1,10 +1,10 @@
-before_script:
- - "echo $JAVA_OPTS"
- - "export JAVA_OPTS='-Xmx512m -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256M'"
+sudo: false
 language: scala
-scala:
-  - 2.10.4
-  - 2.11.6
-  - 2.12.1
 jdk:
-  - oraclejdk8
+- oraclejdk8
+scala:
+- 2.12.4
+- 2.11.11
+script:
+- sbt ++$TRAVIS_SCALA_VERSION test
+

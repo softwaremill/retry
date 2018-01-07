@@ -1,24 +1,51 @@
-import BintrayPlugin.autoImport._
+import sbtrelease.ReleaseStateTransformations._
 
-organization := "me.lessis"
-
-name := "retry"
-
-version := "0.3.0"
-
-description := "a library of simple primitives for asynchronously retrying Scala Futures"
-
-crossScalaVersions := Seq("2.10.5", "2.11.6", "2.12.1")
-scalaVersion in ThisBuild := crossScalaVersions.value.last
-
-lsSettings
-
-val commonSettings = lsSettings ++ Seq(
-  LsKeys.tags in LsKeys.lsync := Seq("future", "retry"),
-  bintrayPackageLabels := (LsKeys.tags in LsKeys.lsync).value,
-  externalResolvers in LsKeys.lsync := (resolvers in bintray).value,
+val commonSettings = Seq(
   scalacOptions += "-feature",
-  resolvers += sbt.Resolver.bintrayRepo("softprops","maven")
+  organization := "com.softwaremill.retry",
+  name := "retry",
+  description := "a library of simple primitives for asynchronously retrying Scala Futures",
+  crossScalaVersions := Seq("2.11.11", "2.12.4"),
+  scalaVersion in ThisBuild := crossScalaVersions.value.last,
+  licenses := Seq(
+    ("MIT", url(s"https://github.com/softprops/odelay/blob/${version.value}/LICENSE"))),
+  // publishing
+  publishTo := Some(
+    if (isSnapshot.value)
+      Opts.resolver.sonatypeSnapshots
+    else
+      Opts.resolver.sonatypeStaging
+  ),
+  publishArtifact in Test := false,
+  publishMavenStyle := true,
+  scmInfo := Some(
+    ScmInfo(url("https://github.com/softwaremill/retry"),
+      "scm:git:git@github.com/softwaremill/retry.git")),
+  developers := List(
+    Developer("adamw", "Adam Warski", "", url("https://softwaremill.com")),
+    Developer("softprops", "Doug Tangren", "", url("https://github.com/softprops"))),
+  homepage := Some(url("http://softwaremill.com/open-source")),
+  sonatypeProfileName := "com.softwaremill",
+  // sbt-release
+  releaseCrossBuild := true,
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releaseProcess := Seq(
+    checkSnapshotDependencies,
+    inquireVersions,
+    // publishing locally so that the pgp password prompt is displayed early
+    // in the process
+    releaseStepCommand("publishLocalSigned"),
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    publishArtifacts,
+    setNextVersion,
+    commitNextVersion,
+    releaseStepCommand("sonatypeReleaseAll"),
+    pushChanges
+  )
 )
 
 lazy val retry = (crossProject in file ("."))
@@ -26,38 +53,16 @@ lazy val retry = (crossProject in file ("."))
   .jvmSettings(
     libraryDependencies ++=
       Seq("org.scalatest" %% "scalatest" % "3.0.1" % "test",
-        "me.lessis" %% "odelay-core" % "0.2.0")
+        "com.softwaremill.odelay" %% "odelay-core" % "0.3.0")
   )
   .jsSettings(
     libraryDependencies ++=
       Seq("org.scalatest" %%% "scalatest" % "3.0.1" % "test",
-        "me.lessis" %%% "odelay-core" % "0.2.0")
+        "com.softwaremill.odelay" %%% "odelay-core" % "0.3.0")
   )
-
 
 lazy val retryJs = retry.js
 lazy val retryJvm = retry.jvm
 
-licenses :=
-  Seq("MIT" ->
-      url(s"https://github.com/softprops/${name.value}/blob/${version.value}/LICENSE"))
-
-homepage := Some(url(s"https://github.com/softprops/${name.value}/"))
-
-publishArtifact in Test := false
-
-publishMavenStyle := true
-
-pomExtra := (
-  <scm>
-  <url>git@github.com:softprops/retry.git</url>
-  <connection>scm:git:git@github.com:softprops/retry.git</connection>
-  </scm>
-  <developers>
-  <developer>
-  <id>softprops</id>
-  <name>Doug Tangren</name>
-    <url>http://github.com/softprops</url>
-  </developer>
-  </developers>)
+commonSettings
 

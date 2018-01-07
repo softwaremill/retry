@@ -1,6 +1,6 @@
 # retry
 
-[![Build Status](https://travis-ci.org/softprops/retry.png?branch=master)](https://travis-ci.org/softprops/retry)
+[![Build Status](https://travis-ci.org/softwaremill/retry.png?branch=master)](https://travis-ci.org/softwaremill/retry)
 
 don't give up
 
@@ -9,9 +9,7 @@ don't give up
 With sbt, add the following to your project's build.sbt
 
 ```scala
-resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
-
-libraryDependencies += "me.lessis" %% "retry" % "0.2.0"
+libraryDependencies += "com.softwaremill.retry" %% "retry" % "0.3.0"
 ```
 ## usage
 
@@ -70,7 +68,7 @@ val successE = successC.or(successD)
 
 ### Sleep schedules
 
-Rather than blocking a thread, retry attempts are scheduled using Timers. Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softprops/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softprops/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softprops/odelay#twittertimers) available in the `odelay-twitter` module.
+Rather than blocking a thread, retry attempts are scheduled using Timers. Your application may run within a platform that provides its own way for scheduling tasks. If an [odelay.jdk.JdkTimer](https://github.com/softwaremill/odelay#jdktimer) isn't what you're looking for, you may wish to use the `odelay.Timer` for netty, [odelay.netty.Timer](https://github.com/softwaremill/odelay#netty3timers) in the `odelay-netty` module or an [odelay.twitter.TwitterTimer](https://github.com/softwaremill/odelay#twittertimers) available in the `odelay-twitter` module.
 
 See the [odelay docs][odelay] for defining your own timer. If none of these aren't what you're looking for, please open a pull request!
 
@@ -155,10 +153,12 @@ val customClient = defaultClient.copy(
 )
 ```
 
-Doug Tangren (softprops) 2013-2014
+## Credits
 
-[timer]: https://github.com/softprops/odelay#timers
-[odelay]: https://github.com/softprops/odelay#readme
+Originally created by [Doug Tangren](https://github.com/softprops), maintained by [SoftwareMill](https://softwaremill.com).
+
+[timer]: https://github.com/softwaremill/odelay#timers
+[odelay]: https://github.com/softwaremill/odelay#readme
 [fut]: http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future
 [either]: http://www.scala-lang.org/api/current/index.html#scala.util.Either
 [option]: http://www.scala-lang.org/api/current/index.html#scala.Option
