@@ -64,5 +64,3 @@ lazy val retry = (crossProject in file ("."))
 lazy val retryJs = retry.js
 lazy val retryJvm = retry.jvm
 
-commonSettings
-
