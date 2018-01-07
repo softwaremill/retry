@@ -65,4 +65,5 @@ lazy val retryJs = retry.js
 lazy val retryJvm = retry.jvm
 
 // root project settings
+commonSettings
 publishArtifact := false
