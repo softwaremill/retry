@@ -35,7 +35,7 @@ Retry provides a set of defaults that provide `retry.Success` definitions for [O
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-retry.Backoff()(() => Future {
+retry.Backoff().apply(() => Future {
   // something that can "fail"
 })
 ```
@@ -102,7 +102,7 @@ The `retry.Pause` module defines interfaces for retrying a future with a configu
 
 ```scala
 // retry 3 times pausing 30 seconds in between attempts
-val future = retry.Pause(3, 30.seconds) { () =>
+val future = retry.Pause(3, 30.seconds).apply { () =>
   attempt
 }
 ```
@@ -116,7 +116,7 @@ backoff factor.
 ```scala
 // retry 4 times with a delay of 1 second which will be multipled
 // by 2 on every attempt
-val future = retry.Backoff(4, 1.second) { () =>
+val future = retry.Backoff(4, 1.second).apply { () =>
   attempt
 }
 ```
@@ -128,7 +128,7 @@ result of your future is "exceptional". You can use the When module which takes 
 
 ```scala
 val policy = retry.When {
-  case NonFatal(e) => retry.Pause(1.second)
+  case NonFatal(e) => retry.Pause(3, 1.second)
 }
 
 policy(execptionalAttempt)
