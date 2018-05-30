@@ -1,7 +1,3 @@
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.21")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.23")
 
-addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.0")
-
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
-
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.6")
+addSbtPlugin("com.softwaremill.sbt-softwaremill" % "sbt-softwaremill" % "1.3.2")
