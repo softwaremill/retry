@@ -84,4 +84,10 @@ class JitterSpec extends FunSpec {
       testJitter(Jitter.equal(cap))
     }
   }
+
+  describe("retry.Defaults.jitter") {
+    it("should work") {
+      assert(Defaults.jitter(100.millis, 300.millis, 3) <= Defaults.cap)
+    }
+  }
 }
