@@ -25,10 +25,14 @@ object Directly {
   def forever: Policy =
     new Policy {
       def apply[T]
-        (promise: PromiseWrapper[T])
-        (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         retry(promise, promise)
+      (promise: PromiseWrapper[T])
+      (implicit success: Success[T],
+       executor: ExecutionContext): Future[T] = {
+        def run(): Future[T] = {
+          retry(promise, run, {_:Future[T] => run()})
+        }
+        run
+      }
     }
 
   /** Retry immediately after failure for a max number of times */
@@ -52,12 +56,15 @@ object Pause {
    (implicit timer: Timer): Policy =
     new Policy { self =>
       def apply[T]
-        (promise: PromiseWrapper[T])
-        (implicit success: Success[T],
-         executor: ExecutionContext): Future[T] =
-         retry(promise, { () =>
-           Delay(delay)(self(promise)).future.flatMap(identity)
-         })
+      (promise: PromiseWrapper[T])
+      (implicit success: Success[T],
+       executor: ExecutionContext): Future[T] = {
+        def run(): Future[T] = {
+          val nextRun: () => Future[T] = () => Delay(delay)(run()).future.flatMap(identity)
+          retry(promise, nextRun, {_:Future[T] => nextRun()})
+        }
+        run()
+      }
     }
 
   /** Retry with a pause between attempts for a max number of times */
@@ -118,11 +125,12 @@ object JitterBackoff {
           (promise: PromiseWrapper[T])
           (implicit success: Success[T],
            executor: ExecutionContext): Future[T] = {
-            def run(attempt: Int, sleep: FiniteDuration): Future[T] = retry(promise, { () =>
-              Delay(delay) {
+            def run(attempt: Int, sleep: FiniteDuration): Future[T] = {
+              val nextRun = () => Delay(delay) {
                 run(attempt + 1, jitter(delay, sleep, attempt))
               }.future.flatMap(identity)
-            })
+              retry(promise, nextRun , {_:Future[T] => nextRun()})
+            }
             run(1, delay)
           }
       }
@@ -158,11 +166,12 @@ object Backoff {
         (promise: PromiseWrapper[T])
         (implicit success: Success[T],
          executor: ExecutionContext): Future[T] = {
-          def run(delay: FiniteDuration): Future[T] = retry(promise, { () =>
-            Delay(delay) {
+          def run(delay: FiniteDuration): Future[T] = {
+            val nextRun = () => Delay(delay) {
               run(Duration(delay.length * base, delay.unit))
             }.future.flatMap(identity)
-          })
+            retry(promise, nextRun, {_:Future[T]=> nextRun()})
+          }
           run(delay)
         }
     }
