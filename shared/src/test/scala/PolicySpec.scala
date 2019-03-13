@@ -83,24 +83,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       }
       future.map(result => assert(counter.get() === 2 && result === "yay!"))
     }
-
-    it ("should repeat on not expected value until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 10000
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future(false)
-      }  else {
-        Future(true)
-      }
-      val policy = Directly.forever
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 10000)
-      }
-    }
   }
 
   describe("retry.Pause") {
@@ -118,24 +100,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           delta >= 90 && delta <= 200) // was 110, depends on how hot runtime is
       }
     }
-
-    it ("should repeat on unexpected value with pause until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 1000
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future(false)
-      }  else {
-        Future(true)
-      }
-      val policy = Pause.forever(1.millis)
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 1000)
-      }
-    }
   }
 
   describe("retry.Backoff") {
@@ -150,24 +114,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         val delta = marker.get() - marker_base
         assert(success.predicate(result)===true &&
           delta >= 90 && delta <= 200) // was 110
-      }
-    }
-
-    it ("should repeat on unexpected value with backoff until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 5
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future(false)
-      }  else {
-        Future(true)
-      }
-      val policy = Backoff.forever(1.millis)
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 5)
       }
     }
   }
@@ -247,24 +193,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
             delta >= 0 && delta <= 2000)
         }
       }
-
-      it ("should repeat on unexpected value with jitter backoff until success") {
-        implicit val success = Success[Boolean](identity)
-        class MyException extends RuntimeException
-        val retried = new AtomicInteger()
-        val retriedUntilSuccess = 10
-        def run() = if (retried.get() < retriedUntilSuccess) {
-          retried.incrementAndGet()
-          Future(false)
-        }  else {
-          Future(true)
-        }
-        val policy = JitterBackoff.forever(1.millis)
-        policy(run).map {result =>
-          assert(result === true)
-          assert(retried.get() == 10)
-        }
-      }
     }
   }
 
@@ -315,91 +243,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         case RetryAfter(duration) => Pause(delay = duration)
       }
       policy(run).map(result => assert(result === true))
-    }
-
-    it ("should repeat on failure until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 10000
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future.failed(new MyException)
-      }  else {
-        Future(true)
-      }
-      val policy = retry.When {
-        // lift an exception into a new policy
-        case _:MyException => Directly.forever
-      }
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 10000)
-      }
-    }
-
-    it ("should repeat on failure with pause until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 1000
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future.failed(new MyException)
-      }  else {
-        Future(true)
-      }
-      val policy = retry.When {
-        // lift an exception into a new policy
-        case _:MyException => Pause.forever(1.millis)
-
-      }
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 1000)
-      }
-    }
-
-    it ("should repeat on failure with backoff until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 5
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future.failed(new MyException)
-      }  else {
-        Future(true)
-      }
-      val policy = retry.When {
-        // lift an exception into a new policy
-        case _:MyException => Backoff.forever(1.millis)
-      }
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 5)
-      }
-    }
-
-    it ("should repeat on failure with jitter backoff until success") {
-      implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
-      val retried = new AtomicInteger()
-      val retriedUntilSuccess = 10
-      def run() = if (retried.get() < retriedUntilSuccess) {
-        retried.incrementAndGet()
-        Future.failed(new MyException)
-      }  else {
-        Future(true)
-      }
-      val policy = retry.When {
-        // lift an exception into a new policy
-        case _:MyException => JitterBackoff.forever(1.millis)
-      }
-      policy(run).map {result =>
-        assert(result === true)
-        assert(retried.get() == 10)
-      }
     }
   }
 }
