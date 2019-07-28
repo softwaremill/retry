@@ -27,7 +27,7 @@ trait Jitter {
     input: FiniteDuration,
     cap: Duration)
     (op: Long => Long): FiniteDuration = {
-      if (!cap.isFinite()) {
+      if (!cap.isFinite) {
         Duration(op(input.length), input.unit)
       } else {
         val ceil = convert(cap, input.unit)
