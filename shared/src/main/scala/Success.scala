@@ -3,7 +3,7 @@ package retry
 import scala.annotation.implicitNotFound
 import scala.util.Try
 
-@implicitNotFound("Cannot find an implicit retry.Success for the given type of Future, either require one yourself or import retry.Success._")
+@implicitNotFound("Cannot find an implicit retry.Success for the given type of Future[${T}], either require one yourself or import retry.Success._")
 class Success[-T](val predicate: T => Boolean) {
   def or[TT <: T](that: Success[TT]): Success[TT] = Success[TT](v => predicate(v) || that.predicate(v))
   def or[TT <: T](that: => Boolean): Success[TT] = or(Success[TT](_ => that))
