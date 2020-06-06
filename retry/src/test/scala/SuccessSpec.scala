@@ -19,18 +19,18 @@ class SuccessSpec extends FunSpec {
   describe("retry.Success.option") {
     val option = implicitly[Success[Option[String]]]
     it("should be successful on Some(_)") {
-      assert(option.predicate(Some("")) == true)
+      assert(option.predicate(Some("")) === true)
     }
 
     it("should be a failure on None") {
-      assert(option.predicate(None) == false)
+      assert(option.predicate(None) === false)
     }
   }
 
   describe("retry.Success.tried") {
     val tried = implicitly[Success[Try[String]]]
     it("should be successful on Success(_)") {
-      assert(tried.predicate(Try("")) == true)
+      assert(tried.predicate(Try("")) === true)
     }
 
     it("should be failure on Failure(_)") {
