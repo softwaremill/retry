@@ -1,16 +1,13 @@
 package retry
 
-import java.security.SecureRandom
 import java.util.Random
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.FunSpec
 import scala.concurrent.duration._
-import language.postfixOps
 
 class JitterSpec extends FunSpec {
-  //val rng = new SecureRandom()
   val rng = new java.util.Random()
   val rand = Jitter.randomSource(rng)
   val cap = 2000 milliseconds
@@ -21,7 +18,7 @@ class JitterSpec extends FunSpec {
 
     for (i <- 0 until 10000) {
       val delay = sleep
-      sleep = jitter(delay, min, i+1)
+      sleep = jitter(delay, min, i + 1)
       assert(sleep.unit === TimeUnit.MILLISECONDS)
       assert(sleep.length >= 0)
       assert(sleep.length <= cap.length)
@@ -29,23 +26,23 @@ class JitterSpec extends FunSpec {
   }
 
   describe("retry.Defaults.random") {
-    it ("should return sane random values") {
-      for (i <- 0 until 1000) {
+    it("should return sane random values") {
+      for (_ <- 0 until 1000) {
         val result = rand(0, 10)
         assert(result >= 0)
         assert(result <= 10)
       }
     }
 
-    it ("should handle swapped bounds") {
-      for (i <- 0 until 1000) {
+    it("should handle swapped bounds") {
+      for (_ <- 0 until 1000) {
         val result = rand(10, 0)
         assert(result >= 0)
         assert(result <= 10)
       }
     }
 
-    it ("should not cache random values") {
+    it("should not cache random values") {
       val counter = new AtomicInteger()
       val rng = new Random() {
         override def nextInt(): Int =
@@ -62,25 +59,25 @@ class JitterSpec extends FunSpec {
   }
 
   describe("retry.Jitter.none") {
-    it ("should perform backoff correctly") {
+    it("should perform backoff correctly") {
       testJitter(Jitter.none(cap))
     }
   }
 
   describe("retry.Jitter.decorrelated") {
-    it ("should perform decorrelated jitter correctly") {
+    it("should perform decorrelated jitter correctly") {
       testJitter(Jitter.decorrelated(cap))
     }
   }
 
   describe("retry.Jitter.full") {
-    it ("should perform full jitter correctly") {
+    it("should perform full jitter correctly") {
       testJitter(Jitter.full(cap))
     }
   }
 
   describe("retry.Jitter.equal") {
-    it ("should perform equal jitter correctly") {
+    it("should perform equal jitter correctly") {
       testJitter(Jitter.equal(cap))
     }
   }

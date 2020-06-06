@@ -1,13 +1,14 @@
 package retry
 
 import java.util.Random
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
-import org.scalatest.{AsyncFunSpec, BeforeAndAfterAll}
 import odelay.Timer
+import org.scalatest.{AsyncFunSpec, BeforeAndAfterAll}
 
+import scala.collection.compat.immutable.LazyList
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
 abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
@@ -19,15 +20,15 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
   val random = new Random()
   val randomSource = Jitter.randomSource(random)
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     timer.stop()
   }
 
-  def forwardCountingFutureStream(value: Int = 0): Stream[Future[Int]] =
+  def forwardCountingFutureStream(value: Int = 0): LazyList[Future[Int]] =
     Future(value) #:: forwardCountingFutureStream(value + 1)
 
-  def backwardCountingFutureStream(value: Int): Stream[Future[Int]] =
-    if (value < 0) Stream.empty
+  def backwardCountingFutureStream(value: Int): LazyList[Future[Int]] =
+    if (value < 0) LazyList.empty
     else Future(value) #:: backwardCountingFutureStream(value - 1)
 
   def time[T](f: => T): Duration = {
@@ -90,7 +91,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
     it("should repeat on not expected value until success") {
       implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
       val retried = new AtomicInteger()
       val retriedUntilSuccess = 10000
       def run() =
@@ -126,7 +126,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
     it("should repeat on unexpected value with pause until success") {
       implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
       val retried = new AtomicInteger()
       val retriedUntilSuccess = 1000
       def run() =
@@ -162,7 +161,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
     it("should repeat on unexpected value with backoff until success") {
       implicit val success = Success[Boolean](identity)
-      class MyException extends RuntimeException
       val retried = new AtomicInteger()
       val retriedUntilSuccess = 5
       def run() =
@@ -266,7 +264,6 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should repeat on unexpected value with jitter backoff until success") {
         implicit val success = Success[Boolean](identity)
-        class MyException extends RuntimeException
         val retried = new AtomicInteger()
         val retriedUntilSuccess = 10
         def run() =
