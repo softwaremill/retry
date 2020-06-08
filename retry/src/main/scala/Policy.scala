@@ -4,7 +4,7 @@ import odelay.{Delay, Timer}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.implicitConversions
+//import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 // This case class and its implicit conversions allow us to accept both
