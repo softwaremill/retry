@@ -1,5 +1,5 @@
 val scala211 = "2.11.12"
-val scala212 = "2.12.10"
+val scala212 = "2.12.12"
 val scala213 = "2.13.2"
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings
@@ -13,8 +13,8 @@ lazy val retry = (projectMatrix in file("retry"))
     name := "retry",
     description := "a library of simple primitives for asynchronously retrying Scala Futures",
     libraryDependencies ++=
-      Seq("org.scalatest" %%% "scalatest" % "3.0.8" % "test",
-        "com.softwaremill.odelay" %%% "odelay-core" % "0.3.1",
+      Seq("org.scalatest" %%% "scalatest" % "3.1.4" % "test",
+        "com.softwaremill.odelay" %%% "odelay-core" % "0.3.2",
         "org.scala-lang.modules" %%% "scala-collection-compat" % "2.1.6"
       )
   )

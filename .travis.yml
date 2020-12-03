@@ -1,11 +1,11 @@
+os: linux
 language: scala
 jdk:
-- oraclejdk8
-dist: trusty
+- openjdk8
+dist: bionic
 scala:
-- 2.12.10
+- 2.12.12
 - 2.11.12
 - 2.13.2
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test
-
