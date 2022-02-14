@@ -1,10 +1,10 @@
 package retry
 
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
 import scala.util.Try
 
-class SuccessSpec extends FunSpec {
+class SuccessSpec extends AnyFunSpec {
   describe("retry.Success.either") {
     val either = implicitly[Success[Either[String, String]]]
     it("should be successful on a Right") {

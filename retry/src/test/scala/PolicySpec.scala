@@ -4,7 +4,8 @@ import java.util.Random
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
 import odelay.Timer
-import org.scalatest.{AsyncFunSpec, BeforeAndAfterAll}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funspec.AsyncFunSpec
 
 import scala.collection.compat.immutable.LazyList
 import scala.concurrent.Future
@@ -101,7 +102,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val policy = Directly.forever
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 10000)
       }
@@ -135,7 +136,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val policy = Pause.forever(1.millis)
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 1000)
       }
@@ -168,7 +169,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val policy = Backoff.forever(1.millis)
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 5)
       }
@@ -181,7 +182,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should retry a future for a specified number of times") {
         implicit val success = Success[Int](_ == 3)
-        implicit val algo = algoCreator(10.millis)
+        implicit val algo: Jitter = algoCreator(10.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = JitterBackoff(3, 1.milli)
         policy(tries.next).map(result =>
@@ -189,7 +190,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       }
 
       it("should fail when expected") {
-        implicit val algo = algoCreator(10.millis)
+        implicit val algo: Jitter = algoCreator(10.millis)
         val success = implicitly[Success[Option[Int]]]
         val tries = Future(None: Option[Int])
         val policy = JitterBackoff(3, 1.milli)
@@ -200,7 +201,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should deal with future failures") {
         implicit val success = Success.always
-        implicit val algo = algoCreator(10.millis)
+        implicit val algo: Jitter = algoCreator(10.millis)
         val policy = JitterBackoff(3, 5.millis)
         val counter = new AtomicInteger()
         val future = policy { () =>
@@ -213,7 +214,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should retry futures passed by-name instead of caching results") {
         implicit val success = Success.always
-        implicit val algo = algoCreator(10.millis)
+        implicit val algo: Jitter = algoCreator(10.millis)
         val counter = new AtomicInteger()
         val policy = JitterBackoff(1, 1.milli)
         val future = policy {
@@ -227,7 +228,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should pause with multiplier and jitter between retries") {
         implicit val success = Success[Int](_ == 2)
-        implicit val algo = algoCreator(1000.millis)
+        implicit val algo: Jitter = algoCreator(1000.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = JitterBackoff(5, 50.millis)
         val marker_base = System.currentTimeMillis
@@ -242,7 +243,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
       it("should also work when invoked as forever") {
         implicit val success = Success[Int](_ == 5)
-        implicit val algo = algoCreator(1000.millis)
+        implicit val algo: Jitter = algoCreator(1000.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = JitterBackoff.forever(50.millis)
         val marker_base = System.currentTimeMillis
@@ -267,7 +268,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
             Future(true)
           }
         val policy = JitterBackoff.forever(1.millis)
-        policy(run).map { result =>
+        policy(run()).map { result =>
           assert(result === true)
           assert(retried.get() == 10)
         }
@@ -325,7 +326,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         // lift an exception into a new policy
         case RetryAfter(duration) => Pause(delay = duration)
       }
-      policy(run).map(result => assert(result === true))
+      policy(run()).map(result => assert(result === true))
     }
 
     it("should repeat on failure until success") {
@@ -344,7 +345,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         // lift an exception into a new policy
         case _: MyException => Directly.forever
       }
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 10000)
       }
@@ -367,7 +368,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         case _: MyException => Pause.forever(1.millis)
 
       }
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 1000)
       }
@@ -389,7 +390,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         // lift an exception into a new policy
         case _: MyException => Backoff.forever(1.millis)
       }
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 5)
       }
@@ -411,7 +412,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         // lift an exception into a new policy
         case _: MyException => JitterBackoff.forever(1.millis)
       }
-      policy(run).map { result =>
+      policy(run()).map { result =>
         assert(result === true)
         assert(retried.get() == 10)
       }

@@ -29,11 +29,11 @@ object Directly {
           implicit success: Success[T],
           executor: ExecutionContext): Future[T] = {
         def run(): Future[T] = {
-          retry(promise, run, { _: Future[T] =>
+          retry(promise, run, { (_: Future[T]) =>
             run()
           })
         }
-        run
+        run()
       }
     }
 
@@ -61,7 +61,7 @@ object Pause {
         def run(): Future[T] = {
           val nextRun: () => Future[T] = () =>
             Delay(delay)(run()).future.flatMap(identity)
-          retry(promise, nextRun, { _: Future[T] =>
+          retry(promise, nextRun, { (_: Future[T]) =>
             nextRun()
           })
         }
@@ -131,7 +131,7 @@ object JitterBackoff {
             Delay(delay) {
               run(attempt + 1, jitter(delay, sleep, attempt))
             }.future.flatMap(identity)
-          retry(promise, nextRun, { _: Future[T] =>
+          retry(promise, nextRun, { (_: Future[T]) =>
             nextRun()
           })
         }
@@ -173,7 +173,7 @@ object Backoff {
             Delay(delay) {
               run(Duration(delay.length * base, delay.unit))
             }.future.flatMap(identity)
-          retry(promise, nextRun, { _: Future[T] =>
+          retry(promise, nextRun, { (_: Future[T]) =>
             nextRun()
           })
         }
@@ -246,7 +246,7 @@ trait CountingPolicy extends Policy {
     // consider this successful if our predicate says so _or_
     // we've reached the end out our countdown
     val countedSuccess = success.or(max < 1)
-    retry(promise, () => orElse(max - 1), { f: Future[T] =>
+    retry(promise, () => orElse(max - 1), { (f: Future[T]) =>
       if (max < 1) f else orElse(max - 1)
     })(countedSuccess, executor)
   }
