@@ -4,17 +4,17 @@ import java.util.Random
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 import scala.concurrent.duration._
 
-class JitterSpec extends FunSpec {
+class JitterSpec extends AnyFunSpec {
   val rng = new java.util.Random()
   val rand = Jitter.randomSource(rng)
-  val cap = 2000 milliseconds
+  val cap = 2000.millis
 
   def testJitter(jitter: Jitter)(): Unit = {
-    val min = rand(1, 100) milliseconds
-    var sleep = rand(1, 1000) milliseconds
+    val min = rand(1, 100).millis
+    var sleep = rand(1, 1000).millis
 
     for (i <- 0 until 10000) {
       val delay = sleep
@@ -60,25 +60,25 @@ class JitterSpec extends FunSpec {
 
   describe("retry.Jitter.none") {
     it("should perform backoff correctly") {
-      testJitter(Jitter.none(cap))
+      testJitter(Jitter.none(cap))()
     }
   }
 
   describe("retry.Jitter.decorrelated") {
     it("should perform decorrelated jitter correctly") {
-      testJitter(Jitter.decorrelated(cap))
+      testJitter(Jitter.decorrelated(cap))()
     }
   }
 
   describe("retry.Jitter.full") {
     it("should perform full jitter correctly") {
-      testJitter(Jitter.full(cap))
+      testJitter(Jitter.full(cap))()
     }
   }
 
   describe("retry.Jitter.equal") {
     it("should perform equal jitter correctly") {
-      testJitter(Jitter.equal(cap))
+      testJitter(Jitter.equal(cap))()
     }
   }
 
