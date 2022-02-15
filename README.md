@@ -9,7 +9,7 @@ don't give up
 With sbt, add the following to your project's build.sbt
 
 ```scala
-libraryDependencies += "com.softwaremill.retry" %% "retry" % "0.3.3"
+libraryDependencies += "com.softwaremill.retry" %% "retry" % "0.3.4"
 ```
 ## usage
 
