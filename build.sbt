@@ -6,13 +6,19 @@ val scala212 = "2.12.12"
 val scala213 = "2.13.2"
 val scala30 = "3.0.0"
 
-val commonSettings = commonSmlBuildSettings ++ ossPublishSettings
+val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ List(
+  organization := "com.softwaremill.retry"
+)
+
+lazy val rootProject = (project in file("."))
+  .settings(commonSettings: _*)
+  .settings(publish / skip := true, name := "retry", scalaVersion := scala213)
+  .aggregate(retry.projectRefs: _*)
 
 lazy val retry = (projectMatrix in file("retry"))
   .settings(commonSettings: _*)
   .settings(
     scalacOptions += "-feature",
-    organization := "com.softwaremill.retry",
     moduleName := "retry",
     name := "retry",
     description := "a library of simple primitives for asynchronously retrying Scala Futures",
