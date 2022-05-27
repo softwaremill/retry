@@ -4,6 +4,7 @@ import odelay.{Delay, Timer}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 //import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -232,6 +233,43 @@ object When {
             case NonFatal(e) =>
               if (depends.isDefinedAt(e)) depends(e)(promise) else fut
           }
+      }
+    }
+}
+
+/** A retry policy that wraps another policy and defines which failures immediately
+  *  stop the retries. 
+  *
+  *  {{{
+  *  val innerPolicy = retry.Backoff.forever
+  *  val policy = retry.FailFast(innerPolicy) {
+  *    case e: FooException     => true
+  *    case e: RuntimeException => isFatal(e.getCause) 
+  *  }
+  *  val future = policy(issueRequest)
+  *  }}}
+  *  
+  *  When the provided partial function is not defined at a particular throwable,
+  *  the retry logic is defined by the wrapped policy.
+  */
+object FailFast {
+  def apply(policy: Policy)(failFastOn: PartialFunction[Throwable, Boolean]): Policy =
+    new Policy {
+      def apply[T](promise: PromiseWrapper[T])(
+        implicit success: Success[T],
+        executor: ExecutionContext): Future[T] = {
+        implicit val successWithFailFast = Success[Try[T]] {
+          case scala.util.Success(res) => success.predicate(res)
+          case scala.util.Failure(_)   => true
+        }
+        policy.apply {
+          promise()
+            .map(scala.util.Success(_))
+            .recover {
+              case e: Throwable if failFastOn.lift(e).contains(true) =>
+                scala.util.Failure(e)
+            }
+        }.map(_.get)
       }
     }
 }
