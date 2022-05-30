@@ -136,6 +136,27 @@ policy(execptionalAttempt)
 
 Note, The domain of the PartialFunction passed to When may cover both the exception thrown _or_ the successful result of the future.
 
+#### FailFast
+
+`retry.FailFast` allows you to wrap any of the above policies and define which failures should immediately stop the retries.
+
+The difference between `retry.FailFast` and `retry.When` with a partial function for `Throwable`s is that `retry.When`
+passes the execution to another policy after the first retry, whereas `retry.FailFast` uses the inner policy logic
+for each retry. For instance, it allows using a policy that retries forever together with a fail fast logic
+on some irrecoverable exceptions.
+
+```scala
+val innerPolicy = retry.Backoff.forever
+val policy = retry.FailFast(innerPolicy) {
+  case e: FooException     => true
+  case e: RuntimeException => isFatal(e.getCause)
+}
+
+policy(issueRequest)
+```
+
+When the provided partial function is not defined at a particular `Throwable`, the retry logic is defined by the wrapped policy.
+
 #### Suggested library usage
 
 Since all retry modules now produce a generic interface, a `retry.Policy`, if you wish to write clients of services you may wish to make define

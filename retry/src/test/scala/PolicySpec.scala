@@ -418,4 +418,203 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       }
     }
   }
+
+  describe("retry.FailFast") {
+    it("should not retry on success") {
+      implicit val success = Success.always
+      val innerPolicy = Directly()
+      val counter = new AtomicInteger(0)
+      val future = FailFast(innerPolicy) {
+        case _ => false
+      } {
+        counter.incrementAndGet()
+        Future.successful("yay!")
+      }
+      future.map(result => assert(counter.get() === 1 && result === "yay!"))
+    }
+
+    it("should retry number of times specified in the inner policy") {
+      implicit val success = Success[Int](_ == 3)
+      val tries = forwardCountingFutureStream().iterator
+      val innerPolicy = Directly(3)
+      val future = FailFast(innerPolicy) {
+        case _ => false
+      } (tries.next)
+      future.map(result => assert(success.predicate(result) === true))
+    }
+
+    it("should fail when inner policy retries are exceeded") {
+      implicit val success = Success.always
+      val innerPolicy = Directly(3)
+      val counter = new AtomicInteger(0)
+      val future = FailFast(innerPolicy) {
+        case _ => false
+      } {
+        counter.incrementAndGet()
+        Future.failed(new RuntimeException("always failing"))
+      }
+      // expect failure after 1+3 tries
+      future.failed.map { t =>
+        assert(counter.get() === 4 && t.getMessage === "always failing")
+      }
+    }
+
+    it("should fail fast when predicate matches every throwable") {
+      implicit val success = Success.always
+      val innerPolicy = Directly.forever
+      val counter = new AtomicInteger(0)
+      val future = FailFast(innerPolicy) {
+        case _ => true
+      } {
+        counter.incrementAndGet()
+        Future.failed(new RuntimeException("always failing"))
+      }
+      future.failed.map { t =>
+        assert(counter.get() === 1 && t.getMessage === "always failing")
+      }
+    }
+
+    it("should fail fast when predicate matches a specific throwable") {
+      implicit val success = Success.always
+      val innerPolicy = Directly.forever
+      val counter = new AtomicInteger(0)
+      val future = FailFast(innerPolicy) {
+        case e => e.getMessage == "2"
+      } {
+        val counterValue = counter.getAndIncrement()
+        Future.failed(new RuntimeException(counterValue.toString))
+      }
+      future.failed.map { t =>
+        assert(counter.get() === 3 && t.getMessage === "2")
+      }
+    }
+
+    it("should repeat on failure until success") {
+      implicit val success = Success[Boolean](identity)
+      val retried = new AtomicInteger()
+      val retriedUntilSuccess = 10000
+      def run() =
+        if (retried.get() < retriedUntilSuccess) {
+          retried.incrementAndGet()
+          Future.failed(new RuntimeException)
+        } else {
+          Future(true)
+        }
+      val innerPolicy = Directly.forever
+      val policy = FailFast(innerPolicy) {
+        case _ => false
+      }
+      policy(run()).map { result =>
+        assert(result === true)
+        assert(retried.get() == 10000)
+      }
+    }
+
+    it("should repeat on failure with pause until success") {
+      implicit val success = Success[Boolean](identity)
+      val retried = new AtomicInteger()
+      val retriedUntilSuccess = 1000
+      def run() =
+        if (retried.get() < retriedUntilSuccess) {
+          retried.incrementAndGet()
+          Future.failed(new RuntimeException)
+        } else {
+          Future(true)
+        }
+      val innerPolicy = Pause.forever(1.millis)
+      val policy = FailFast(innerPolicy) {
+        case _ => false
+      }
+      policy(run()).map { result =>
+        assert(result === true)
+        assert(retried.get() == 1000)
+      }
+    }
+
+    it("should repeat on failure with backoff until success") {
+      implicit val success = Success[Boolean](identity)
+      val retried = new AtomicInteger()
+      val retriedUntilSuccess = 5
+      def run() =
+        if (retried.get() < retriedUntilSuccess) {
+          retried.incrementAndGet()
+          Future.failed(new RuntimeException)
+        } else {
+          Future(true)
+        }
+      val innerPolicy = Backoff.forever(1.millis)
+      val policy = FailFast(innerPolicy) {
+        case _ => false
+      }
+      policy(run()).map { result =>
+        assert(result === true)
+        assert(retried.get() == 5)
+      }
+    }
+
+    it("should repeat on failure with jitter backoff until success") {
+      implicit val success = Success[Boolean](identity)
+      val retried = new AtomicInteger()
+      val retriedUntilSuccess = 10
+      def run() =
+        if (retried.get() < retriedUntilSuccess) {
+          retried.incrementAndGet()
+          Future.failed(new RuntimeException)
+        } else {
+          Future(true)
+        }
+      val innerPolicy = JitterBackoff.forever(1.millis)
+      val policy = FailFast(innerPolicy) {
+        case _ => false
+      }
+      policy(run()).map { result =>
+        assert(result === true)
+        assert(retried.get() == 10)
+      }
+    }
+
+    it("should repeat on failure with when condition until success") {
+      implicit val success = Success[Boolean](identity)
+      class MyException extends RuntimeException
+      val retried = new AtomicInteger()
+      val retriedUntilSuccess = 10000
+      def run() =
+        if (retried.get() < retriedUntilSuccess) {
+          retried.incrementAndGet()
+          Future.failed(new MyException)
+        } else {
+          Future(true)
+        }
+      val innerPolicy = When {
+        case _: MyException => Directly.forever
+      }
+      val policy = FailFast(innerPolicy) {
+        case _ => false
+      }
+      policy(run()).map { result =>
+        assert(result === true)
+        assert(retried.get() == 10000)
+      }
+    }
+
+    it("should take precedence over when condition if it also matches fail fast condition") {
+      implicit val success = Success[Boolean](identity)
+      class MyException extends RuntimeException("my exception")
+      val retried = new AtomicInteger()
+      def run() = {
+        retried.incrementAndGet()
+        Future.failed(new MyException)
+      }
+      val innerPolicy = When {
+        case _: MyException => Directly.forever
+      }
+      val policy = FailFast(innerPolicy) {
+        case _ => true
+      }
+      policy(run()).failed.map { t =>
+        assert(t.getMessage === "my exception")
+        assert(retried.get() == 1)
+      }
+    }
+  }
 }
