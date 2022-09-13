@@ -3,8 +3,8 @@ import com.softwaremill.Publish.ossPublishSettings
 
 val scala211 = "2.11.12"
 val scala212 = "2.12.12"
-val scala213 = "2.13.2"
-val scala30 = "3.0.0"
+val scala213 = "2.13.8"
+val scala30 = "3.2.0"
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ List(
   organization := "com.softwaremill.retry"
