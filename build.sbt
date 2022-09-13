@@ -24,8 +24,8 @@ lazy val retry = (projectMatrix in file("retry"))
     description := "a library of simple primitives for asynchronously retrying Scala Futures",
     libraryDependencies ++=
       Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.9" % "test",
-        "com.softwaremill.odelay" %%% "odelay-core" % "0.3.3",
+        "org.scalatest" %%% "scalatest" % "3.2.13" % "test",
+        "com.softwaremill.odelay" %%% "odelay-core" % "0.4.0",
         "org.scala-lang.modules" %%% "scala-collection-compat" % "2.6.0"
       )
   )
@@ -33,5 +33,8 @@ lazy val retry = (projectMatrix in file("retry"))
     scalaVersions = List(scala211, scala212, scala213, scala30)
   )
   .jsPlatform(
-    scalaVersions = List(scala212, scala213, scala30)
+    scalaVersions = List(scala212, scala213, scala30),
+    settings = Seq(
+      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0"
+    )
   )
