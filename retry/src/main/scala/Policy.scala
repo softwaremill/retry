@@ -26,13 +26,15 @@ object Directly {
   /** Retry immediately after failure forever */
   def forever: Policy =
     new Policy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(): Future[T] = {
-          retry(promise, run, { (_: Future[T]) =>
-            run()
-          })
+          retry(
+            promise,
+            run,
+            { (_: Future[T]) =>
+              run()
+            }
+          )
         }
         run()
       }
@@ -41,9 +43,7 @@ object Directly {
   /** Retry immediately after failure for a max number of times */
   def apply(max: Int = 3): Policy =
     new CountingPolicy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(max: Int): Future[T] = countdown(max, promise, run)
         run(max)
       }
@@ -53,108 +53,104 @@ object Directly {
 object Pause {
 
   /** Retry with a pause between attempts forever */
-  def forever(delay: FiniteDuration = Defaults.delay)(
-      implicit timer: Timer): Policy =
+  def forever(delay: FiniteDuration = Defaults.delay)(implicit timer: Timer): Policy =
     new Policy { self =>
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(): Future[T] = {
-          val nextRun: () => Future[T] = () =>
-            Delay(delay)(run()).future.flatMap(identity)
-          retry(promise, nextRun, { (_: Future[T]) =>
-            nextRun()
-          })
+          val nextRun: () => Future[T] = () => Delay(delay)(run()).future.flatMap(identity)
+          retry(
+            promise,
+            nextRun,
+            { (_: Future[T]) =>
+              nextRun()
+            }
+          )
         }
         run()
       }
     }
 
   /** Retry with a pause between attempts for a max number of times */
-  def apply(max: Int = 4, delay: FiniteDuration = Defaults.delay)(
-      implicit timer: Timer): Policy =
+  def apply(max: Int = 4, delay: FiniteDuration = Defaults.delay)(implicit timer: Timer): Policy =
     new CountingPolicy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(max: Int): Future[T] =
-          countdown(max,
-                    promise,
-                    c => Delay(delay)(run(c)).future.flatMap(identity))
+          countdown(max, promise, c => Delay(delay)(run(c)).future.flatMap(identity))
         run(max)
       }
     }
 }
 
-/** A retry policy which will back off using a configurable policy which
-  *  incorporates random jitter. This has the advantage of reducing contention
-  *  if you have threaded clients using the same service.
+/** A retry policy which will back off using a configurable policy which incorporates random jitter. This has the
+  * advantage of reducing contention if you have threaded clients using the same service.
   *
-  *  {{{
+  * {{{
   *  val policy = retry.JitterBackoff()
   *  val future = policy(issueRequest)
-  *  }}}
+  * }}}
   *
-  *  The following pre-made jitter algorithms are available for you to use:
+  * The following pre-made jitter algorithms are available for you to use:
   *
-  *  - [[retry.Jitter.none]]
-  *  - [[retry.Jitter.full]]
-  *  - [[retry.Jitter.equal]]
-  *  - [[retry.Jitter.decorrelated]]
+  *   - [[retry.Jitter.none]]
+  *   - [[retry.Jitter.full]]
+  *   - [[retry.Jitter.equal]]
+  *   - [[retry.Jitter.decorrelated]]
   *
-  *  You can choose one like this:
-  *  {{{
+  * You can choose one like this:
+  * {{{
   *  implicit val jitter = retry.Jitter.full(cap = 5.minutes)
   *  val policy = retry.JitterBackoff(1 second)
   *  val future = policy(issueRequest)
-  *  }}}
+  * }}}
   *
-  *  If a jitter policy isn't in scope, it will use [[retry.Jitter.full]] by
-  *  default which tends to cause clients slightly less work at the cost of
-  *  slightly more time.
+  * If a jitter policy isn't in scope, it will use [[retry.Jitter.full]] by default which tends to cause clients
+  * slightly less work at the cost of slightly more time.
   *
-  *  For more information about the algorithms, see the following article:
+  * For more information about the algorithms, see the following article:
   *
-  *  [[https://www.awsarchitectureblog.com/2015/03/backoff.html]]
+  * [[https://www.awsarchitectureblog.com/2015/03/backoff.html]]
   */
 object JitterBackoff {
 
   /** Retry with exponential backoff + jitter forever */
-  def forever(delay: FiniteDuration = Defaults.delay)(
-      implicit timer: Timer,
-      jitter: Jitter = Defaults.jitter): Policy =
+  def forever(delay: FiniteDuration = Defaults.delay)(implicit timer: Timer, jitter: Jitter = Defaults.jitter): Policy =
     new Policy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(attempt: Int, sleep: FiniteDuration): Future[T] = {
           val nextRun = () =>
             Delay(delay) {
               run(attempt + 1, jitter(delay, sleep, attempt))
             }.future.flatMap(identity)
-          retry(promise, nextRun, { (_: Future[T]) =>
-            nextRun()
-          })
+          retry(
+            promise,
+            nextRun,
+            { (_: Future[T]) =>
+              nextRun()
+            }
+          )
         }
         run(1, delay)
       }
     }
 
   /** Retry with exponential backoff + jitter for a max number of times */
-  def apply(max: Int = 8, delay: FiniteDuration = Defaults.delay)(
-      implicit timer: Timer,
-      jitter: Jitter = Defaults.jitter): Policy =
+  def apply(max: Int = 8, delay: FiniteDuration = Defaults.delay)(implicit
+      timer: Timer,
+      jitter: Jitter = Defaults.jitter
+  ): Policy =
     new CountingPolicy {
-      override def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      override def apply[T](
+          promise: PromiseWrapper[T]
+      )(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(attempt: Int, max: Int, sleep: FiniteDuration): Future[T] =
-          countdown(max,
-                    promise,
-                    count =>
-                      Delay(sleep) {
-                        run(attempt + 1, count, jitter(delay, sleep, attempt))
-                      }.future.flatMap(identity))
+          countdown(
+            max,
+            promise,
+            count =>
+              Delay(sleep) {
+                run(attempt + 1, count, jitter(delay, sleep, attempt))
+              }.future.flatMap(identity)
+          )
         run(1, max, delay)
       }
     }
@@ -163,161 +159,153 @@ object JitterBackoff {
 object Backoff {
 
   /** Retry with exponential backoff forever */
-  def forever(delay: FiniteDuration = Defaults.delay, base: Int = 2)(
-      implicit timer: Timer): Policy =
+  def forever(delay: FiniteDuration = Defaults.delay, base: Int = 2)(implicit timer: Timer): Policy =
     new Policy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(delay: FiniteDuration): Future[T] = {
           val nextRun = () =>
             Delay(delay) {
               run(Duration(delay.length * base, delay.unit))
             }.future.flatMap(identity)
-          retry(promise, nextRun, { (_: Future[T]) =>
-            nextRun()
-          })
+          retry(
+            promise,
+            nextRun,
+            { (_: Future[T]) =>
+              nextRun()
+            }
+          )
         }
         run(delay)
       }
     }
 
   /** Retry with exponential backoff for a max number of times */
-  def apply(max: Int = 8,
-            delay: FiniteDuration = Defaults.delay,
-            base: Int = 2)(implicit timer: Timer): Policy =
+  def apply(max: Int = 8, delay: FiniteDuration = Defaults.delay, base: Int = 2)(implicit timer: Timer): Policy =
     new CountingPolicy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         def run(max: Int, delay: FiniteDuration): Future[T] =
-          countdown(max,
-                    promise,
-                    count =>
-                      Delay(delay) {
-                        run(count, Duration(delay.length * base, delay.unit))
-                      }.future.flatMap(identity))
+          countdown(
+            max,
+            promise,
+            count =>
+              Delay(delay) {
+                run(count, Duration(delay.length * base, delay.unit))
+              }.future.flatMap(identity)
+          )
         run(max, delay)
       }
     }
 }
 
-/** A retry policy in which the a failure determines the way a future should be retried.
-  *  The partial function provided may define the domain of both the success OR exceptional
-  *  failure of a future fails explicitly.
+/** A retry policy in which the a failure determines the way a future should be retried. The partial function provided
+  * may define the domain of both the success OR exceptional failure of a future fails explicitly.
   *
-  *  {{{
+  * {{{
   *  val policy = retry.When {
   *    case RetryAfter(retryAt) => retry.Pause(delay = retryAt)
   *  }
   *  val future = policy(issueRequest)
-  *  }}}
+  * }}}
   *
-  *  If the result is not defined for the depends block, the future will not
-  *  be retried.
+  * If the result is not defined for the depends block, the future will not be retried.
   */
 object When {
   type Depends = PartialFunction[Any, Policy]
   def apply(depends: Depends): Policy =
     new Policy {
-      def apply[T](promise: PromiseWrapper[T])(
-          implicit success: Success[T],
-          executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         val fut = promise()
         fut
           .flatMap { res =>
             if (success.predicate(res) || !depends.isDefinedAt(res)) fut
             else depends(res)(promise)
           }
-          .recoverWith {
-            case NonFatal(e) =>
-              if (depends.isDefinedAt(e)) depends(e)(promise) else fut
+          .recoverWith { case NonFatal(e) =>
+            if (depends.isDefinedAt(e)) depends(e)(promise) else fut
           }
       }
     }
 }
 
-/** A retry policy that wraps another policy and defines which failures immediately
-  *  stop the retries. 
+/** A retry policy that wraps another policy and defines which failures immediately stop the retries.
   *
-  *  {{{
+  * {{{
   *  val innerPolicy = retry.Backoff.forever
   *  val policy = retry.FailFast(innerPolicy) {
   *    case e: FooException     => true
-  *    case e: RuntimeException => isFatal(e.getCause) 
+  *    case e: RuntimeException => isFatal(e.getCause)
   *  }
   *  val future = policy(issueRequest)
-  *  }}}
-  *  
-  *  When the provided partial function is not defined at a particular throwable,
-  *  the retry logic is defined by the wrapped policy.
+  * }}}
+  *
+  * When the provided partial function is not defined at a particular throwable, the retry logic is defined by the
+  * wrapped policy.
   */
 object FailFast {
   def apply(policy: Policy)(failFastOn: PartialFunction[Throwable, Boolean]): Policy =
     new Policy {
-      def apply[T](promise: PromiseWrapper[T])(
-        implicit success: Success[T],
-        executor: ExecutionContext): Future[T] = {
+      def apply[T](promise: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
         implicit val successWithFailFast = Success[Try[T]] {
           case scala.util.Success(res) => success.predicate(res)
           case scala.util.Failure(_)   => true
         }
-        policy.apply {
-          promise()
-            .map(scala.util.Success(_))
-            .recover {
-              case e: Throwable if failFastOn.lift(e).contains(true) =>
-                scala.util.Failure(e)
-            }
-        }.map(_.get)
+        policy
+          .apply {
+            promise()
+              .map(scala.util.Success(_))
+              .recover {
+                case e: Throwable if failFastOn.lift(e).contains(true) =>
+                  scala.util.Failure(e)
+              }
+          }
+          .map(_.get)
       }
     }
 }
 
 /** Retry policy that incorporates a count */
 trait CountingPolicy extends Policy {
-  protected def countdown[T](max: Int,
-                             promise: () => Future[T],
-                             orElse: Int => Future[T])(
-      implicit success: Success[T],
-      executor: ExecutionContext): Future[T] = {
+  protected def countdown[T](max: Int, promise: () => Future[T], orElse: Int => Future[T])(implicit
+      success: Success[T],
+      executor: ExecutionContext
+  ): Future[T] = {
     // consider this successful if our predicate says so _or_
     // we've reached the end out our countdown
     val countedSuccess = success.or(max < 1)
-    retry(promise, () => orElse(max - 1), { (f: Future[T]) =>
-      if (max < 1) f else orElse(max - 1)
-    })(countedSuccess, executor)
+    retry(
+      promise,
+      () => orElse(max - 1),
+      { (f: Future[T]) =>
+        if (max < 1) f else orElse(max - 1)
+      }
+    )(countedSuccess, executor)
   }
 }
 
-/** A Policy defines an interface for applying a future with retry semantics
-  *  specific to implementations
+/** A Policy defines an interface for applying a future with retry semantics specific to implementations
   */
 trait Policy {
 
-  def apply[T](pw: PromiseWrapper[T])(implicit success: Success[T],
-                                      executor: ExecutionContext): Future[T]
+  def apply[T](pw: PromiseWrapper[T])(implicit success: Success[T], executor: ExecutionContext): Future[T]
 
-  def apply[T](promise: => Future[T])(implicit success: Success[T],
-                                      executor: ExecutionContext): Future[T] =
+  def apply[T](promise: => Future[T])(implicit success: Success[T], executor: ExecutionContext): Future[T] =
     apply { () =>
       promise
     }
 
-  protected def retry[T](promise: () => Future[T],
-                         orElse: () => Future[T],
-                         recovery: Future[T] => Future[T] = identity(
-                           _: Future[T]))(
-      implicit success: Success[T],
-      executor: ExecutionContext): Future[T] = {
+  protected def retry[T](
+      promise: () => Future[T],
+      orElse: () => Future[T],
+      recovery: Future[T] => Future[T] = identity(_: Future[T])
+  )(implicit success: Success[T], executor: ExecutionContext): Future[T] = {
     val fut = promise()
     fut
       .flatMap { res =>
         if (success.predicate(res)) fut
         else orElse()
       }
-      .recoverWith {
-        case NonFatal(_) => recovery(fut)
+      .recoverWith { case NonFatal(_) =>
+        recovery(fut)
       }
   }
 }

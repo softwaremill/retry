@@ -1,7 +1,7 @@
 package retry
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import java.util.concurrent.{ ThreadLocalRandom, TimeUnit }
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import java.util.concurrent.{ThreadLocalRandom, TimeUnit}
 
 object Defaults {
   val delay: FiniteDuration = Duration(500, TimeUnit.MILLISECONDS)
@@ -10,4 +10,3 @@ object Defaults {
     Jitter.randomSource(ThreadLocalRandom.current())
   val jitter = Jitter.full()
 }
-
