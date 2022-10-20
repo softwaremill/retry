@@ -42,15 +42,13 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
     it("should retry a future for a specified number of times") {
       implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
-      Directly(3)(tries.next).map(result =>
-        assert(success.predicate(result) === true))
+      Directly(3)(tries.next).map(result => assert(success.predicate(result) === true))
     }
 
     it("should fail when expected") {
       val success = implicitly[Success[Option[Int]]]
       val tries = Future(None: Option[Int])
-      Directly(2)(tries).map(result =>
-        assert(success.predicate(result) === false))
+      Directly(2)(tries).map(result => assert(success.predicate(result) === false))
     }
 
     it("should deal with future failures") {
@@ -74,8 +72,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         counter.incrementAndGet()
         Future.failed(new RuntimeException("always failing"))
       }
-      future.failed.map(t =>
-        assert(counter.get() === 2 && t.getMessage === "always failing"))
+      future.failed.map(t => assert(counter.get() === 2 && t.getMessage === "always failing"))
     }
 
     it("should retry futures passed by-name instead of caching results") {
@@ -176,8 +173,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
     }
   }
 
-  def testJitterBackoff(name: String,
-                        algoCreator: FiniteDuration => Jitter): Unit = {
+  def testJitterBackoff(name: String, algoCreator: FiniteDuration => Jitter): Unit = {
     describe(s"retry.JitterBackoff.$name") {
 
       it("should retry a future for a specified number of times") {
@@ -185,8 +181,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         implicit val algo: Jitter = algoCreator(10.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = JitterBackoff(3, 1.milli)
-        policy(tries.next).map(result =>
-          assert(success.predicate(result) === true))
+        policy(tries.next).map(result => assert(success.predicate(result) === true))
       }
 
       it("should fail when expected") {
@@ -208,8 +203,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           counter.incrementAndGet()
           Future.failed(new RuntimeException("always failing"))
         }
-        future.failed.map(t =>
-          assert(counter.get() === 4 && t.getMessage === "always failing"))
+        future.failed.map(t => assert(counter.get() === 4 && t.getMessage === "always failing"))
       }
 
       it("should retry futures passed by-name instead of caching results") {
@@ -234,10 +228,9 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         val marker_base = System.currentTimeMillis
         val marker = new AtomicLong(0)
 
-        policy({ marker.set(System.currentTimeMillis); tries.next }).map {
-          result =>
-            val delta = marker.get() - marker_base
-            assert(success.predicate(result) === true && delta >= 0)
+        policy({ marker.set(System.currentTimeMillis); tries.next }).map { result =>
+          val delta = marker.get() - marker_base
+          assert(success.predicate(result) === true && delta >= 0)
         }
       }
 
@@ -249,10 +242,9 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         val marker_base = System.currentTimeMillis
         val marker = new AtomicLong(0)
 
-        policy({ marker.set(System.currentTimeMillis); tries.next }).map {
-          result =>
-            val delta = marker.get() - marker_base
-            assert(success.predicate(result) === true && delta >= 0)
+        policy({ marker.set(System.currentTimeMillis); tries.next }).map { result =>
+          val delta = marker.get() - marker_base
+          assert(success.predicate(result) === true && delta >= 0)
         }
       }
 
@@ -279,8 +271,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
   testJitterBackoff("none", t => Jitter.none(t))
   testJitterBackoff("full", t => Jitter.full(t, random = randomSource))
   testJitterBackoff("equal", t => Jitter.equal(t, random = randomSource))
-  testJitterBackoff("decorrelated",
-                    t => Jitter.decorrelated(t, random = randomSource))
+  testJitterBackoff("decorrelated", t => Jitter.decorrelated(t, random = randomSource))
 
   describe("retry.When") {
     it("should retry conditionally when a condition is met") {
@@ -291,8 +282,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         // of matching then dispatching a retry depending on
         // the value of the future when completed
         case 0 =>
-          When {
-            case 1 => Pause(delay = 2.seconds)
+          When { case 1 =>
+            Pause(delay = 2.seconds)
           }
       }
       val future = policy(tries.next)
@@ -424,8 +415,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       implicit val success = Success.always
       val innerPolicy = Directly()
       val counter = new AtomicInteger(0)
-      val future = FailFast(innerPolicy) {
-        case _ => false
+      val future = FailFast(innerPolicy) { case _ =>
+        false
       } {
         counter.incrementAndGet()
         Future.successful("yay!")
@@ -437,9 +428,9 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
       val innerPolicy = Directly(3)
-      val future = FailFast(innerPolicy) {
-        case _ => false
-      } (tries.next)
+      val future = FailFast(innerPolicy) { case _ =>
+        false
+      }(tries.next)
       future.map(result => assert(success.predicate(result) === true))
     }
 
@@ -447,8 +438,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       implicit val success = Success.always
       val innerPolicy = Directly(3)
       val counter = new AtomicInteger(0)
-      val future = FailFast(innerPolicy) {
-        case _ => false
+      val future = FailFast(innerPolicy) { case _ =>
+        false
       } {
         counter.incrementAndGet()
         Future.failed(new RuntimeException("always failing"))
@@ -463,8 +454,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       implicit val success = Success.always
       val innerPolicy = Directly.forever
       val counter = new AtomicInteger(0)
-      val future = FailFast(innerPolicy) {
-        case _ => true
+      val future = FailFast(innerPolicy) { case _ =>
+        true
       } {
         counter.incrementAndGet()
         Future.failed(new RuntimeException("always failing"))
@@ -478,8 +469,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       implicit val success = Success.always
       val innerPolicy = Directly.forever
       val counter = new AtomicInteger(0)
-      val future = FailFast(innerPolicy) {
-        case e => e.getMessage == "2"
+      val future = FailFast(innerPolicy) { case e =>
+        e.getMessage == "2"
       } {
         val counterValue = counter.getAndIncrement()
         Future.failed(new RuntimeException(counterValue.toString))
@@ -501,8 +492,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val innerPolicy = Directly.forever
-      val policy = FailFast(innerPolicy) {
-        case _ => false
+      val policy = FailFast(innerPolicy) { case _ =>
+        false
       }
       policy(run()).map { result =>
         assert(result === true)
@@ -522,8 +513,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val innerPolicy = Pause.forever(1.millis)
-      val policy = FailFast(innerPolicy) {
-        case _ => false
+      val policy = FailFast(innerPolicy) { case _ =>
+        false
       }
       policy(run()).map { result =>
         assert(result === true)
@@ -543,8 +534,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val innerPolicy = Backoff.forever(1.millis)
-      val policy = FailFast(innerPolicy) {
-        case _ => false
+      val policy = FailFast(innerPolicy) { case _ =>
+        false
       }
       policy(run()).map { result =>
         assert(result === true)
@@ -564,8 +555,8 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
           Future(true)
         }
       val innerPolicy = JitterBackoff.forever(1.millis)
-      val policy = FailFast(innerPolicy) {
-        case _ => false
+      val policy = FailFast(innerPolicy) { case _ =>
+        false
       }
       policy(run()).map { result =>
         assert(result === true)
@@ -585,11 +576,11 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         } else {
           Future(true)
         }
-      val innerPolicy = When {
-        case _: MyException => Directly.forever
+      val innerPolicy = When { case _: MyException =>
+        Directly.forever
       }
-      val policy = FailFast(innerPolicy) {
-        case _ => false
+      val policy = FailFast(innerPolicy) { case _ =>
+        false
       }
       policy(run()).map { result =>
         assert(result === true)
@@ -605,11 +596,11 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         retried.incrementAndGet()
         Future.failed(new MyException)
       }
-      val innerPolicy = When {
-        case _: MyException => Directly.forever
+      val innerPolicy = When { case _: MyException =>
+        Directly.forever
       }
-      val policy = FailFast(innerPolicy) {
-        case _ => true
+      val policy = FailFast(innerPolicy) { case _ =>
+        true
       }
       policy(run()).failed.map { t =>
         assert(t.getMessage === "my exception")
