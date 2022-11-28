@@ -35,6 +35,6 @@ lazy val retry = (projectMatrix in file("retry"))
   .jsPlatform(
     scalaVersions = List(scala212, scala213, scala30),
     settings = Seq(
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.4.0"
+      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
     )
   )
