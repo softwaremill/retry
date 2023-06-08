@@ -2,7 +2,7 @@ import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
 import com.softwaremill.Publish.ossPublishSettings
 
 val scala211 = "2.11.12"
-val scala212 = "2.12.17"
+val scala212 = "2.12.18"
 val scala213 = "2.13.10"
 val scala30 = "3.3.0"
 
