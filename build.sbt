@@ -26,7 +26,7 @@ lazy val retry = (projectMatrix in file("retry"))
       Seq(
         "org.scalatest" %%% "scalatest" % "3.2.16" % "test",
         "com.softwaremill.odelay" %%% "odelay-core" % "0.4.0",
-        "org.scala-lang.modules" %%% "scala-collection-compat" % "2.10.0"
+        "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0"
       )
   )
   .jvmPlatform(
