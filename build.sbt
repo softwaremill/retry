@@ -24,7 +24,7 @@ lazy val retry = (projectMatrix in file("retry"))
     description := "a library of simple primitives for asynchronously retrying Scala Futures",
     libraryDependencies ++=
       Seq(
-        "org.scalatest" %%% "scalatest" % "3.2.17" % "test",
+        "org.scalatest" %%% "scalatest" % "3.2.18" % "test",
         "com.softwaremill.odelay" %%% "odelay-core" % "0.4.0",
         "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0"
       )
