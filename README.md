@@ -1,7 +1,5 @@
 # retry
 
-[![Build Status](https://travis-ci.org/softwaremill/retry.png?branch=master)](https://travis-ci.org/softwaremill/retry)
-
 don't give up
 
 ## install
