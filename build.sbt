@@ -3,7 +3,7 @@ import com.softwaremill.Publish.ossPublishSettings
 
 val scala211 = "2.11.12"
 val scala212 = "2.12.19"
-val scala213 = "2.13.13"
+val scala213 = "2.13.17"
 val scala30 = "3.4.1"
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ List(
