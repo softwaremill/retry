@@ -20,3 +20,9 @@ project/plugins/project/
 
 *~
 .#~
+
+.bsp
+.vscode
+.cursor
+.metals
+metals.sbt
