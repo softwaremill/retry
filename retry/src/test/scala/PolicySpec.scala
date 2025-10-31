@@ -607,5 +607,33 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         assert(retried.get() == 1)
       }
     }
+
+    it("should stop repeating when the failure changes") {
+      implicit val success = Success[Boolean](identity)
+      object RecoverableException extends RuntimeException("recoverable exception")
+      object FatalException extends RuntimeException("fatal exception")
+      val retried = new AtomicInteger()
+      val retriedUntilFailure = 5
+      def run() = {
+        println(retried.get())
+        if (retried.getAndIncrement() < retriedUntilFailure) {
+          Future.failed(RecoverableException)
+        } else {
+          if(retried.get() > 2 * retriedUntilFailure) {
+            // this state should never be reached
+            Future(true)
+          } else Future.failed(FatalException)
+        }
+      }
+
+      val policy = When {
+        case FatalException => throw FatalException
+        case _ => Directly.forever
+      }
+      policy(run()).failed.map { t =>
+        assert(t.getMessage === "fatal exception")
+        assert(retried.get() == 5)
+      }
+    }
   }
 }
