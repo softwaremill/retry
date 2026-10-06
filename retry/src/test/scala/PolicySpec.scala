@@ -11,6 +11,8 @@ import scala.collection.compat.immutable.LazyList
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+case class RetryAfter(duration: FiniteDuration) extends RuntimeException
+
 abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
 
   // needed so we do not get a scalatest EC error
@@ -42,7 +44,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
     it("should retry a future for a specified number of times") {
       implicit val success = Success[Int](_ == 3)
       val tries = forwardCountingFutureStream().iterator
-      Directly(3)(tries.next).map(result => assert(success.predicate(result) === true))
+      Directly(3)(tries.next()).map(result => assert(success.predicate(result) === true))
     }
 
     it("should fail when expected") {
@@ -114,7 +116,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       val marker_base = System.currentTimeMillis
       val marker = new AtomicLong(0)
 
-      val runF = policy({ marker.set(System.currentTimeMillis); tries.next })
+      val runF = policy({ marker.set(System.currentTimeMillis); tries.next() })
       runF.map { result =>
         val delta = marker.get() - marker_base
         assert(success.predicate(result) === true && delta >= 90) // was 110, depends on how hot runtime is
@@ -147,7 +149,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       val policy = Backoff(2, 30.millis)
       val marker_base = System.currentTimeMillis
       val marker = new AtomicLong(0)
-      val runF = policy({ marker.set(System.currentTimeMillis); tries.next })
+      val runF = policy({ marker.set(System.currentTimeMillis); tries.next() })
       runF.map { result =>
         val delta = marker.get() - marker_base
         assert(success.predicate(result) === true && delta >= 90) // was 110
@@ -181,7 +183,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         implicit val algo: Jitter = algoCreator(10.millis)
         val tries = forwardCountingFutureStream().iterator
         val policy = JitterBackoff(3, 1.milli)
-        policy(tries.next).map(result => assert(success.predicate(result) === true))
+        policy(tries.next()).map(result => assert(success.predicate(result) === true))
       }
 
       it("should fail when expected") {
@@ -228,7 +230,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         val marker_base = System.currentTimeMillis
         val marker = new AtomicLong(0)
 
-        policy({ marker.set(System.currentTimeMillis); tries.next }).map { result =>
+        policy({ marker.set(System.currentTimeMillis); tries.next() }).map { result =>
           val delta = marker.get() - marker_base
           assert(success.predicate(result) === true && delta >= 0)
         }
@@ -242,7 +244,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         val marker_base = System.currentTimeMillis
         val marker = new AtomicLong(0)
 
-        policy({ marker.set(System.currentTimeMillis); tries.next }).map { result =>
+        policy({ marker.set(System.currentTimeMillis); tries.next() }).map { result =>
           val delta = marker.get() - marker_base
           assert(success.predicate(result) === true && delta >= 0)
         }
@@ -286,7 +288,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
             Pause(delay = 2.seconds)
           }
       }
-      val future = policy(tries.next)
+      val future = policy(tries.next())
       future.map(result => assert(success.predicate(result) === true))
     }
 
@@ -299,13 +301,12 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
         case 1 => Directly()
       }
 
-      val future = policy(tries.next)
+      val future = policy(tries.next())
       future.map(result => assert(success.predicate(result) === false))
     }
 
     it("should handle future failures") {
       implicit val success = Success[Boolean](identity)
-      case class RetryAfter(duration: FiniteDuration) extends RuntimeException
       val retried = new AtomicBoolean
       def run() =
         if (retried.get()) Future(true)
@@ -430,7 +431,7 @@ abstract class PolicySpec extends AsyncFunSpec with BeforeAndAfterAll {
       val innerPolicy = Directly(3)
       val future = FailFast(innerPolicy) { case _ =>
         false
-      }(tries.next)
+      }(tries.next())
       future.map(result => assert(success.predicate(result) === true))
     }
 

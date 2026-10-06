@@ -272,13 +272,18 @@ trait CountingPolicy extends Policy {
     // consider this successful if our predicate says so _or_
     // we've reached the end out our countdown
     val countedSuccess = success.or(max < 1)
-    retry(
-      promise,
-      () => orElse(max - 1),
-      { (f: Future[T]) =>
-        if (max < 1) f else orElse(max - 1)
-      }
-    )(countedSuccess, executor)
+    locally {
+      // shadows the outer `success`, so that `countedSuccess` is passed implicitly to `retry`
+      // (passing implicit arguments explicitly requires `using` in Scala 3.7+, unavailable in Scala 2)
+      implicit val success: Success[T] = countedSuccess
+      retry(
+        promise,
+        () => orElse(max - 1),
+        { (f: Future[T]) =>
+          if (max < 1) f else orElse(max - 1)
+        }
+      )
+    }
   }
 }
 
