@@ -273,8 +273,7 @@ trait CountingPolicy extends Policy {
     // we've reached the end out our countdown
     val countedSuccess = success.or(max < 1)
     locally {
-      // shadows the outer `success`, so that `countedSuccess` is passed implicitly to `retry`
-      // (passing implicit arguments explicitly requires `using` in Scala 3.7+, unavailable in Scala 2)
+      // for scala 2 compatibility
       implicit val success: Success[T] = countedSuccess
       retry(
         promise,
