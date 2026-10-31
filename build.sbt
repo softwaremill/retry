@@ -30,12 +30,13 @@ lazy val retry = (projectMatrix in file("retry"))
   .jvmPlatform(
     scalaVersions = List(scala212, scala213, scala3),
     settings = Seq(
-      scalacOptions ++= (if (ScalaArtifacts.isScala3(scalaVersion.value)) Seq("-release", "17") else Seq("-release", "8"))
+      scalacOptions ++= (if (ScalaArtifacts.isScala3(scalaVersion.value)) Seq("-release", "17")
+                         else Seq("-release", "8"))
     )
   )
   .jsPlatform(
     scalaVersions = List(scala212, scala213, scala3),
     settings = Seq(
-      libraryDependencies += "io.github.cquiroz" %% "scala-java-time" % "2.5.0"
+      libraryDependencies += "io.github.cquiroz" %% "scala-java-time" % "2.9.0"
     )
   )
